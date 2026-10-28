@@ -53,7 +53,13 @@ public class menuPrincipal extends JFrame {
                 }
             }
         });
-        
+        btnPartida.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                tableroJuego tablero = new tableroJuego(jugadorActivo);
+                tablero.setVisible(true);
+            }
+        });
     }
 }
 
