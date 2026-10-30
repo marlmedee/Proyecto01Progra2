@@ -14,6 +14,9 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Collections;
 public class tableroJuego extends JFrame{
+    private piezaNormal[][] matrizLogica; 
+    private int filaOrigen = -1;
+    private int colOrigen = -1;
     private JButton casillas[][];
     private Jugador jugadorActivo;
     
@@ -26,6 +29,7 @@ public class tableroJuego extends JFrame{
         
         setLayout(new GridLayout(10,10));
         casillas = new JButton[10][10];
+        matrizLogica = new piezaNormal[10][10];
         for(int fila = 0;fila<10;fila++){
             for(int col=0;col<10;col++){
                 casillas[fila][col] = new JButton();
@@ -40,23 +44,57 @@ public class tableroJuego extends JFrame{
                     casillas[fila][col].addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            System.out.println("Clic detectado en: Fila " + f + ", Columna " + c);
+                            
+                           
+                            if (filaOrigen==-1){
+                                //validamos que ahí de verdad halla una pieza en nuestro tablero
+                                if (matrizLogica[f][c]!=null){
+                                    filaOrigen = f; 
+                                    colOrigen = c;  
+                                    casillas[f][c].setBackground(Color.YELLOW); //con este se resalta el que el jugador toco
+                                }
+                            } 
+                            //si fila del origen ya no es -1, significa que es el clic 2
+                            else{
+                                
+                                if(matrizLogica[f][c] != null) {
+                                    casillas[filaOrigen][colOrigen].setBackground(Color.LIGHT_GRAY); // Despintamos la anterior
+                                    filaOrigen = f;
+                                    colOrigen = c;
+                                    casillas[f][c].setBackground(Color.YELLOW); // Pintamos la nueva
+                                }
+                                // si tocamos otro espacio significa que queremos mover
+                                else if(matrizLogica[f][c]==null&&casillas[f][c].isEnabled()){
+                                 
+                                    casillas[f][c].setText(casillas[filaOrigen][colOrigen].getText());
+                                    casillas[f][c].setForeground(casillas[filaOrigen][colOrigen].getForeground());
+                                    casillas[filaOrigen][colOrigen].setText("");
+                                    
+                                    // mover el objeto
+                                    matrizLogica[f][c] = matrizLogica[filaOrigen][colOrigen];
+                                    matrizLogica[filaOrigen][colOrigen] = null;
+                                    
+                                    // reestablecer colores y variables para el otro turno
+                                    casillas[filaOrigen][colOrigen].setBackground(Color.LIGHT_GRAY);
+                                    filaOrigen = -1;
+                                    colOrigen = -1;
+                                }
+                            }
                         }
                     });
                 }
-                
                 add(casillas[fila][col]);
 
             }
         }
-        ArrayList<piezaNormal> listaHeroes = generarFichasal(pieza.Bando.HEROES);
-        ArrayList<piezaNormal> listaVillanos = generarFichasal(pieza.Bando.VILLANOS);
+        ArrayList<piezaNormal>listaHeroes=generarFichasal(pieza.Bando.HEROES);
+        ArrayList<piezaNormal>listaVillanos=generarFichasal(pieza.Bando.VILLANOS);
         colocarFichasrecu(listaHeroes, 0, 0, 0); 
         colocarFichasrecu(listaVillanos, 0, 6, 0);
     }
     private ArrayList<piezaNormal> generarFichasal(pieza.Bando bando){
         ArrayList<piezaNormal>lista = new ArrayList<>();
-        for (int i = 0; i < 40; i++) {
+        for (int i = 0; i < 40; i++){
             lista.add(new piezaNormal(1,bando,"Ficha"+i));
         }
         Collections.shuffle(lista);
@@ -71,8 +109,9 @@ public class tableroJuego extends JFrame{
             colocarFichasrecu(fichas,indice,fila+1,0);
             return;
         }
-        piezaNormal piezaActual = fichas.get(indice);
-        if (piezaActual.getBando() == pieza.Bando.HEROES){
+        piezaNormal piezaActual=fichas.get(indice);
+        matrizLogica[fila][col]=piezaActual;
+        if (piezaActual.getBando()==pieza.Bando.HEROES){
             casillas[fila][col].setText("H");
             casillas[fila][col].setForeground(Color.BLUE);
         } 
