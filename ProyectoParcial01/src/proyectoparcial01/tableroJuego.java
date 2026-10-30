@@ -44,37 +44,68 @@ public class tableroJuego extends JFrame{
                     casillas[fila][col].addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            
-                           
-                            if (filaOrigen==-1){
-                                //validamos que ahí de verdad halla una pieza en nuestro tablero
-                                if (matrizLogica[f][c]!=null){
-                                    filaOrigen = f; 
-                                    colOrigen = c;  
-                                    casillas[f][c].setBackground(Color.YELLOW); //con este se resalta el que el jugador toco
-                                }
-                            } 
-                            //si fila del origen ya no es -1, significa que es el clic 2
-                            else{
-                                
-                                if(matrizLogica[f][c] != null) {
-                                    casillas[filaOrigen][colOrigen].setBackground(Color.LIGHT_GRAY); // Despintamos la anterior
+                            if (filaOrigen == -1) {
+                                //validamos que haya pieza
+                                if (matrizLogica[f][c] != null) {
                                     filaOrigen = f;
                                     colOrigen = c;
-                                    casillas[f][c].setBackground(Color.YELLOW); // Pintamos la nueva
+                                    casillas[f][c].setBackground(Color.YELLOW); 
                                 }
-                                // si tocamos otro espacio significa que queremos mover
-                                else if(matrizLogica[f][c]==null&&casillas[f][c].isEnabled()){
-                                 
-                                    casillas[f][c].setText(casillas[filaOrigen][colOrigen].getText());
-                                    casillas[f][c].setForeground(casillas[filaOrigen][colOrigen].getForeground());
-                                    casillas[filaOrigen][colOrigen].setText("");
+                            } 
+                            else {
+                                //si toca otra pieza de su bando cambiamos la seleccion
+                                if (matrizLogica[f][c] != null && matrizLogica[f][c].getBando() == matrizLogica[filaOrigen][colOrigen].getBando()) {
+                                    casillas[filaOrigen][colOrigen].setBackground(Color.LIGHT_GRAY); 
+                                    filaOrigen = f;
+                                    colOrigen = c;
+                                    casillas[f][c].setBackground(Color.YELLOW); 
+                                }
+                                //Si es una casilla vacía o del enemigo intentamos mover
+                                else{
                                     
-                                    // mover el objeto
-                                    matrizLogica[f][c] = matrizLogica[filaOrigen][colOrigen];
-                                    matrizLogica[filaOrigen][colOrigen] = null;
+                                    int difFila = Math.abs(filaOrigen - f);
+                                    int difCol = Math.abs(colOrigen - c);
                                     
-                                    // reestablecer colores y variables para el otro turno
+                                    if((difFila + difCol)==1&&casillas[f][c].isEnabled()){
+                                        if (matrizLogica[f][c] == null){
+                                            casillas[f][c].setText(casillas[filaOrigen][colOrigen].getText());
+                                            casillas[f][c].setForeground(casillas[filaOrigen][colOrigen].getForeground());
+                                            matrizLogica[f][c] = matrizLogica[filaOrigen][colOrigen];
+                                        }
+                                        else{
+                                            piezaNormal atacante = matrizLogica[filaOrigen][colOrigen];
+                                            piezaNormal defensor = matrizLogica[f][c];
+                                            
+                                            //llamamos a la interfaz que programaste en el modulo 1
+                                            atacable.resulCombate resultado = defensor.defender(atacante);
+                                            
+                                            if (resultado == atacable.resulCombate.GANA_ATACANTE) {
+                                                JOptionPane.showMessageDialog(null, "¡Ganaste el combate!");
+                                                casillas[f][c].setText(casillas[filaOrigen][colOrigen].getText());
+                                                casillas[f][c].setForeground(casillas[filaOrigen][colOrigen].getForeground());
+                                                matrizLogica[f][c] = atacante;
+                                            } 
+                                            else if (resultado == atacable.resulCombate.GANA_DEFENSOR) {
+                                                JOptionPane.showMessageDialog(null, "¡Tu pieza fue destruida!");
+                                                // El defensor se queda, la matriz destino no cambia
+                                            }
+                                            else{
+                                                JOptionPane.showMessageDialog(null, "¡Empate! Ambas piezas se destruyen.");
+                                                casillas[f][c].setText("");
+                                                matrizLogica[f][c] = null;
+                                            }
+                                        }
+                                        
+                                        // Sin importar quién gane, el atacante abandona su casilla original
+                                        casillas[filaOrigen][colOrigen].setText("");
+                                        matrizLogica[filaOrigen][colOrigen] = null;
+                                        
+                                    } 
+                                    else {
+                                        JOptionPane.showMessageDialog(null, "Movimiento inválido. Solo 1 casilla arriba, abajo, izquierda o derecha.");
+                                    }
+                                    
+                                    // limpiamos todo para el siguiente turno
                                     casillas[filaOrigen][colOrigen].setBackground(Color.LIGHT_GRAY);
                                     filaOrigen = -1;
                                     colOrigen = -1;
@@ -83,10 +114,7 @@ public class tableroJuego extends JFrame{
                         }
                     });
                 }
-                add(casillas[fila][col]);
-
-            }
-        }
+        }   }
         ArrayList<piezaNormal>listaHeroes=generarFichasal(pieza.Bando.HEROES);
         ArrayList<piezaNormal>listaVillanos=generarFichasal(pieza.Bando.VILLANOS);
         colocarFichasrecu(listaHeroes, 0, 0, 0); 
