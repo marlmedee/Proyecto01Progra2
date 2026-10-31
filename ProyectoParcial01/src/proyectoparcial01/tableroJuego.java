@@ -151,10 +151,10 @@ public class tableroJuego extends JFrame{
             lista.add(new piezaNormal(3,bando,prefijo+" rango 3"));
         }
         for (int i = 0; i < 8; i++) {
-            lista.add(new piezaNormal(7,bando,prefijo+" rango 2"));
+            lista.add(new piezaNormal(2,bando,prefijo+" rango 2"));
         }
         lista.add(new piezaNormal(1,bando,prefijo+" rango 1"));
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 6; i++) {
             lista.add(new piezaNormal(11, bando, "Bomba"));
         }
         Collections.shuffle(lista);
