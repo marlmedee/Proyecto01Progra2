@@ -71,32 +71,27 @@ public class tableroJuego extends JFrame{
                                     int difFila=Math.abs(filaOrigen-f);
                                     int difCol=Math.abs(colOrigen-c);
                                     
-                                    if((difFila + difCol)==1&&casillas[f][c].isEnabled()){
+                                    if((difFila + difCol)==1 && casillas[f][c].isEnabled()){
+                                        
                                         if(matrizLogica[f][c]==null){
-                                            casillas[f][c].setText(casillas[filaOrigen][colOrigen].getText());
-                                            casillas[f][c].setForeground(casillas[filaOrigen][colOrigen].getForeground());
+                                            casillas[f][c].setIcon(casillas[filaOrigen][colOrigen].getIcon());
                                             matrizLogica[f][c] = matrizLogica[filaOrigen][colOrigen];
                                         }
                                         else{
                                             piezaNormal atacante = matrizLogica[filaOrigen][colOrigen];
                                             piezaNormal defensor = matrizLogica[f][c];
-                                            
-                                            //llamamos a la interfaz que programe en el modulo 1
                                             atacable.resulCombate resultado = defensor.defender(atacante);
-                                            
-                                            if(resultado == atacable.resulCombate.GANA_ATACANTE){
-                                                JOptionPane.showMessageDialog(null, "¡Ganaste el combate!");
-                                                casillas[f][c].setText(casillas[filaOrigen][colOrigen].getText());
-                                                casillas[f][c].setForeground(casillas[filaOrigen][colOrigen].getForeground());
+                                            if(resultado==atacable.resulCombate.GANA_ATACANTE){
+                                                JOptionPane.showMessageDialog(null,"Ganaste el combate!");
+                                                casillas[f][c].setIcon(casillas[filaOrigen][colOrigen].getIcon());
                                                 matrizLogica[f][c] = atacante;
                                             } 
-                                            else if(resultado == atacable.resulCombate.GANA_DEFENSOR){
-                                                JOptionPane.showMessageDialog(null, "Tu pieza fue destruida!");
-                                                // El defensor se queda, la matriz destino no cambia
+                                            else if(resultado==atacable.resulCombate.GANA_DEFENSOR){
+                                                JOptionPane.showMessageDialog(null,"Tu pieza fue destruida!");
                                             }
                                             else{
-                                                JOptionPane.showMessageDialog(null, "Empate! Ambas piezas se destruyen");
-                                                casillas[f][c].setText("");
+                                                JOptionPane.showMessageDialog(null,"Empate! Ambas piezas se destruyen");
+                                                casillas[f][c].setIcon(null);
                                                 matrizLogica[f][c] = null;
                                             }
                                         }
@@ -109,7 +104,6 @@ public class tableroJuego extends JFrame{
                                     else{
                                         JOptionPane.showMessageDialog(null, "Movimiento inválido. Solo 1 casilla arriba, abajo, izquierda o derecha.");
                                     }
-                                    
                                     // limpiamos todo para el siguiente turno
                                     casillas[filaOrigen][colOrigen].setBackground(Color.LIGHT_GRAY);
                                     filaOrigen=-1;
@@ -128,37 +122,50 @@ public class tableroJuego extends JFrame{
     }
     private ArrayList<piezaNormal> generarFichasal(pieza.Bando bando){
         ArrayList<piezaNormal>lista = new ArrayList<>();
-        String prefijo=(bando==pieza.Bando.HEROES)? "H":"V";
-        lista.add(new piezaNormal(0,bando,"Tierra"));
-        lista.add(new piezaNormal(10,bando,prefijo+"Rango 10"));
-        lista.add(new piezaNormal(9,bando,prefijo+"Rango 9"));
-        for (int i = 0;i < 2; i++) {
-            lista.add(new piezaNormal(8,bando,prefijo+" rango 8"));
+        String p=(bando==pieza.Bando.HEROES)? "h":"v";
+        lista.add(new piezaNormal(0,bando,p+"0_1")); 
+        lista.add(new piezaNormal(10,bando,p+"10_1"));
+        lista.add(new piezaNormal(9,bando,p+"9_1"));
+        for(int i = 1; i <= 2; i++){
+           lista.add(new piezaNormal(8,bando,p+"8_"+i));
         }
-        for (int i = 0; i < 3; i++) {
-            lista.add(new piezaNormal(7,bando,prefijo+" rango 7"));
+        for (int i = 1; i <= 3; i++){
+            lista.add(new piezaNormal(7,bando,p+"7_"+i));
         }
-        for (int i = 0; i < 4; i++) {
-            lista.add(new piezaNormal(6,bando,prefijo+" rango 6"));
+        for (int i = 1; i <= 4; i++){
+            lista.add(new piezaNormal(6,bando,p+"6_"+i));
         }
-        for (int i = 0; i < 4; i++) {
-            lista.add(new piezaNormal(5,bando,prefijo+" rango 5"));
+        for (int i = 1; i <= 4; i++){
+            lista.add(new piezaNormal(5,bando,p+"5_" +i));
         }
-        for (int i = 0; i < 4; i++) {
-            lista.add(new piezaNormal(4,bando,prefijo+" rango 4"));
+        for (int i = 1; i <= 4; i++){
+            lista.add(new piezaNormal(4,bando,p+"4_" +i));
         }
-        for (int i = 0; i < 5; i++) {
-            lista.add(new piezaNormal(3,bando,prefijo+" rango 3"));
+        for (int i = 1; i <= 5; i++){
+            lista.add(new piezaNormal(3,bando,p+"3_"+i));
         }
-        for (int i = 0; i < 8; i++) {
-            lista.add(new piezaNormal(2,bando,prefijo+" rango 2"));
+        for (int i = 1; i <= 8; i++){
+            lista.add(new piezaNormal(2,bando,p+"2_"+i));
         }
-        lista.add(new piezaNormal(1,bando,prefijo+" rango 1"));
-        for (int i = 0; i < 6; i++) {
-            lista.add(new piezaNormal(11, bando, "Bomba"));
+        lista.add(new piezaNormal(1,bando,p+"1_1"));
+        for (int i = 1; i <= 6; i++){
+           lista.add(new piezaNormal(11,bando,p+"11_"+i));
         }
         Collections.shuffle(lista);
         return lista;
+    }
+    private ImageIcon obtenerImagenFicha(String nombreArchivo) {
+        String ruta = "/imagenes/" + nombreArchivo + ".png";
+        java.net.URL url = getClass().getResource(ruta);
+        if (url != null){
+            ImageIcon iconoOriginal=new ImageIcon(url);
+            Image imagenEscalada=iconoOriginal.getImage().getScaledInstance(65, 65, Image.SCALE_SMOOTH);
+            return new ImageIcon(imagenEscalada);
+        }
+        else{
+            System.err.println("Falta la imagen: " + ruta);
+            return null; 
+        }
     }
     //una de las funciones recursivas que son solicitadas
     private void colocarFichasrecu(ArrayList<piezaNormal>fichas,int indice,int fila,int col){
@@ -171,14 +178,8 @@ public class tableroJuego extends JFrame{
         }
         piezaNormal piezaActual=fichas.get(indice);
         matrizLogica[fila][col]=piezaActual;
-        if (piezaActual.getBando()==pieza.Bando.HEROES){
-            casillas[fila][col].setText("H"+piezaActual.getRango());
-            casillas[fila][col].setForeground(Color.BLUE);
-        } 
-        else{
-            casillas[fila][col].setText("V"+piezaActual.getRango());
-            casillas[fila][col].setForeground(Color.RED);
-        }
+        casillas[fila][col].setText("");
+        casillas[fila][col].setIcon(obtenerImagenFicha(piezaActual.getNombre()));
         colocarFichasrecu(fichas,indice+1,fila,col+1);
     }
 }

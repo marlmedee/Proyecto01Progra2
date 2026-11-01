@@ -34,4 +34,8 @@ public class piezaNormal extends pieza implements movible, atacable {
       
         return atacable.resulCombate.EMPATE;
     }
+
+    public String getNombre() {
+       return this.nombre;
+    }
 }
