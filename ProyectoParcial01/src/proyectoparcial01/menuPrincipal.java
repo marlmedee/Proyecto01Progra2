@@ -22,7 +22,7 @@ public class menuPrincipal extends JFrame {
         this.manejador = m;
 
         setTitle("Marvel Stratego - Menu principal");
-        setSize(800, 600);
+        setSize(750, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //esto para cargar imagen de fondo

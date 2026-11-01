@@ -19,23 +19,66 @@ public class tableroJuego extends JFrame{
     private int colOrigen = -1;
     private JButton casillas[][];
     private Jugador jugadorActivo;
-    
+    private int cell = 65;
+    private Image fondoImg;
+    private JPanel tablero;
+    private final java.util.HashMap<String, Image> cacheImagenes = new java.util.HashMap<>();
     public tableroJuego(Jugador j){
         this.jugadorActivo = j;
         setTitle("Marvel Stratego - Tablero de batalla");
-        setSize(700,700);
-        setLocationRelativeTo(null);
+        setResizable(true);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        
-        setLayout(new GridLayout(10,10));
+      
+        fondoImg = new ImageIcon(getClass().getResource("/imagenes/fondoTablero.jpg")).getImage();
+
+        Rectangle pantalla = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+        final int lado = ((Math.min(pantalla.width, pantalla.height) - 60) / 10) * 10;
+        cell = lado / 10;
+
+        tablero = new JPanel(new GridLayout(10, 10, 0, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.drawImage(fondoImg, 0, 0, getWidth(), getHeight(), this);
+            }
+        };
+
+        JPanel contenedor = new JPanel(null) {
+            @Override
+            public Dimension getPreferredSize() { return new Dimension(lado, lado); }
+            @Override
+            public void doLayout() {
+                int l = Math.min(getWidth(), getHeight());
+                tablero.setBounds((getWidth() - l) / 2, (getHeight() - l) / 2, l, l);
+            }
+        };
+        contenedor.setBackground(Color.BLACK);
+        contenedor.add(tablero);
+        setContentPane(contenedor);
+
+        tablero.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int nuevo = tablero.getWidth() / 10;
+                if (nuevo > 0 && nuevo != cell) {
+                    cell = nuevo;
+                    refrescarTodo();
+                }
+            }
+        });
         casillas = new JButton[10][10];
         matrizLogica = new piezaNormal[10][10];
         for(int fila = 0;fila<10;fila++){
             for(int col=0;col<10;col++){
                 casillas[fila][col] = new JButton();
-                casillas[fila][col].setOpaque(true);
+                casillas[fila][col].setOpaque(false);
+                casillas[fila][col].setContentAreaFilled(false); 
+                casillas[fila][col].setMargin(new Insets(0, 0, 0, 0));
+                casillas[fila][col].setFocusPainted(false);
+                
+                casillas[fila][col].setBorder(null); 
                 if((fila==4||fila==5)&&(col==2||col==3||col==6||col==7)){
-                    casillas[fila][col].setBackground(Color.black);
+                    
                     casillas[fila][col].setEnabled(false);
                 }
                 else{
@@ -46,7 +89,7 @@ public class tableroJuego extends JFrame{
                         public void actionPerformed(ActionEvent e) {
                             if(filaOrigen == -1) {
                                 if (matrizLogica[f][c]!=null) {
-                                    // regla la tierra (0) y las bombas 1 no se mueven
+                                    // regla la tierra 0 y las bombas 1 no se mueven
                                     if (matrizLogica[f][c].getRango()==0||matrizLogica[f][c].getRango()==11) {
                                         JOptionPane.showMessageDialog(null, "las bombas y la tierra no se pueden mover");
                                     }
@@ -113,12 +156,14 @@ public class tableroJuego extends JFrame{
                         }
                     });
                 }
-                add(casillas[fila][col]);
+                tablero.add(casillas[fila][col]);
         }   }
         ArrayList<piezaNormal>listaHeroes=generarFichasal(pieza.Bando.HEROES);
         ArrayList<piezaNormal>listaVillanos=generarFichasal(pieza.Bando.VILLANOS);
         colocarFichasrecu(listaHeroes, 0, 0, 0); 
         colocarFichasrecu(listaVillanos, 0, 6, 0);
+        pack();
+        setLocationRelativeTo(null);
     }
     private ArrayList<piezaNormal> generarFichasal(pieza.Bando bando){
         ArrayList<piezaNormal>lista = new ArrayList<>();
@@ -159,7 +204,7 @@ public class tableroJuego extends JFrame{
         java.net.URL url = getClass().getResource(ruta);
         if (url != null){
             ImageIcon iconoOriginal=new ImageIcon(url);
-            Image imagenEscalada=iconoOriginal.getImage().getScaledInstance(65, 65, Image.SCALE_SMOOTH);
+            Image imagenEscalada=iconoOriginal.getImage().getScaledInstance(cell-4,cell-4,Image.SCALE_SMOOTH);
             return new ImageIcon(imagenEscalada);
         }
         else{
@@ -181,5 +226,14 @@ public class tableroJuego extends JFrame{
         casillas[fila][col].setText("");
         casillas[fila][col].setIcon(obtenerImagenFicha(piezaActual.getNombre()));
         colocarFichasrecu(fichas,indice+1,fila,col+1);
+    }
+    private void refrescarTodo() {
+        for (int f = 0; f < 10; f++) {
+            for (int c = 0; c < 10; c++) {
+                if (matrizLogica[f][c] != null) {
+                    casillas[f][c].setIcon(obtenerImagenFicha(matrizLogica[f][c].getNombre()));
+                }
+            }
+        }
     }
 }
