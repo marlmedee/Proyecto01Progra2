@@ -22,6 +22,8 @@ public class tableroJuego extends JFrame{
     private int cell = 65;
     private Image fondoImg;
     private JPanel tablero;
+    private JPanel cementerioHeroes;
+    private JPanel cementerioVillanos;
     private final java.util.HashMap<String, Image> cacheImagenes = new java.util.HashMap<>();
     public tableroJuego(Jugador j){
         this.jugadorActivo = j;
@@ -54,7 +56,18 @@ public class tableroJuego extends JFrame{
         };
         contenedor.setBackground(Color.BLACK);
         contenedor.add(tablero);
-        setContentPane(contenedor);
+        setLayout(new BorderLayout());
+        //configuramos el panel izquierdo de los heroes caidos
+        cementerioHeroes=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        cementerioHeroes.setPreferredSize(new Dimension(130, 0));
+        cementerioHeroes.setBackground(new Color(30, 30, 30)); // Gris oscuro elegante
+        //configuramos el panel derecho de los villanos que derrotaron
+        cementerioVillanos=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        cementerioVillanos.setPreferredSize(new Dimension(130, 0));
+        cementerioVillanos.setBackground(new Color(30, 30, 30));
+        add(cementerioHeroes,BorderLayout.WEST);
+        add(cementerioVillanos,BorderLayout.EAST);
+        add(contenedor,BorderLayout.CENTER); //tu tablero queda protegido en el centro
 
         tablero.addComponentListener(new ComponentAdapter() {
             @Override
@@ -126,21 +139,26 @@ public class tableroJuego extends JFrame{
                                             atacable.resulCombate resultado = defensor.defender(atacante);
                                             if(resultado==atacable.resulCombate.GANA_ATACANTE){
                                                 JOptionPane.showMessageDialog(null,"Ganaste el combate!");
+                                                registrarBaja(defensor);
                                                 casillas[f][c].setIcon(casillas[filaOrigen][colOrigen].getIcon());
                                                 matrizLogica[f][c] = atacante;
+                                                
                                             } 
                                             else if(resultado==atacable.resulCombate.GANA_DEFENSOR){
                                                 JOptionPane.showMessageDialog(null,"Tu pieza fue destruida!");
+                                                registrarBaja(atacante);
                                             }
                                             else{
                                                 JOptionPane.showMessageDialog(null,"Empate! Ambas piezas se destruyen");
+                                                registrarBaja(atacante); 
+                                                registrarBaja(defensor);
                                                 casillas[f][c].setIcon(null);
                                                 matrizLogica[f][c] = null;
                                             }
                                         }
                                         
                                         //sin importar quien gane el que ataca abandona su casilla original
-                                        casillas[filaOrigen][colOrigen].setText("");
+                                        casillas[filaOrigen][colOrigen].setIcon(null);
                                         matrizLogica[filaOrigen][colOrigen] = null;
                                         
                                     } 
@@ -233,6 +251,26 @@ public class tableroJuego extends JFrame{
                 if (matrizLogica[f][c] != null) {
                     casillas[f][c].setIcon(obtenerImagenFicha(matrizLogica[f][c].getNombre()));
                 }
+            }
+        }
+    }
+    private void registrarBaja(piezaNormal piezaEliminada){
+        String ruta = "/imagenes/"+piezaEliminada.getNombre()+".png";
+        java.net.URL url=getClass().getResource(ruta);
+        
+        if (url!=null) {
+            ImageIcon iconoOriginal=new ImageIcon(url);
+            Image img=iconoOriginal.getImage().getScaledInstance(35, 35, Image.SCALE_SMOOTH);
+            JLabel etiquetaBaja=new JLabel(new ImageIcon(img));
+            if (piezaEliminada.getBando()==pieza.Bando.HEROES) {
+                cementerioHeroes.add(etiquetaBaja);
+                cementerioHeroes.revalidate();
+                cementerioHeroes.repaint();
+            }
+            else {
+                cementerioVillanos.add(etiquetaBaja);
+                cementerioVillanos.revalidate();
+                cementerioVillanos.repaint();
             }
         }
     }
