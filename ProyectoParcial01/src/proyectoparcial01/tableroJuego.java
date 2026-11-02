@@ -25,6 +25,7 @@ public class tableroJuego extends JFrame{
     private JPanel cementerioHeroes;
     private JPanel cementerioVillanos;
     private final java.util.HashMap<String, Image> cacheImagenes = new java.util.HashMap<>();
+    private pieza.Bando turnoActual = pieza.Bando.HEROES;
     public tableroJuego(Jugador j){
         this.jugadorActivo = j;
         setTitle("Marvel Stratego - Tablero de batalla");
@@ -60,14 +61,14 @@ public class tableroJuego extends JFrame{
         //configuramos el panel izquierdo de los heroes caidos
         cementerioHeroes=new JPanel(new FlowLayout(FlowLayout.LEFT));
         cementerioHeroes.setPreferredSize(new Dimension(130, 0));
-        cementerioHeroes.setBackground(new Color(30, 30, 30)); // Gris oscuro elegante
+        cementerioHeroes.setBackground(new Color(30, 30, 30));//ponemos un gris bonito
         //configuramos el panel derecho de los villanos que derrotaron
         cementerioVillanos=new JPanel(new FlowLayout(FlowLayout.LEFT));
         cementerioVillanos.setPreferredSize(new Dimension(130, 0));
         cementerioVillanos.setBackground(new Color(30, 30, 30));
         add(cementerioHeroes,BorderLayout.WEST);
         add(cementerioVillanos,BorderLayout.EAST);
-        add(contenedor,BorderLayout.CENTER); //tu tablero queda protegido en el centro
+        add(contenedor,BorderLayout.CENTER); //el tablero queda protegido
 
         tablero.addComponentListener(new ComponentAdapter() {
             @Override
@@ -102,6 +103,11 @@ public class tableroJuego extends JFrame{
                         public void actionPerformed(ActionEvent e) {
                             if(filaOrigen == -1) {
                                 if (matrizLogica[f][c]!=null) {
+                                    //aqui validamos que no toque piezas del enemigo
+                                    if (matrizLogica[f][c].getBando()!=turnoActual) {
+                                        JOptionPane.showMessageDialog(null, "no es tu turno! juegan los "+turnoActual);
+                                        return; // Cancela el clic
+                                    }
                                     // regla la tierra 0 y las bombas 1 no se mueven
                                     if (matrizLogica[f][c].getRango()==0||matrizLogica[f][c].getRango()==11) {
                                         JOptionPane.showMessageDialog(null, "las bombas y la tierra no se pueden mover");
@@ -165,6 +171,9 @@ public class tableroJuego extends JFrame{
                                     else{
                                         JOptionPane.showMessageDialog(null, "Movimiento inválido. Solo 1 casilla arriba, abajo, izquierda o derecha.");
                                     }
+                                    turnoActual=(turnoActual==pieza.Bando.HEROES)?pieza.Bando.VILLANOS:pieza.Bando.HEROES;
+                                    JOptionPane.showMessageDialog(null, "Cambio de bando, Ahora juegan: "+turnoActual);
+                                    refrescarTodo();
                                     // limpiamos todo para el siguiente turno
                                     casillas[filaOrigen][colOrigen].setBackground(Color.LIGHT_GRAY);
                                     filaOrigen=-1;
@@ -182,6 +191,7 @@ public class tableroJuego extends JFrame{
         colocarFichasrecu(listaVillanos, 0, 6, 0);
         pack();
         setLocationRelativeTo(null);
+        refrescarTodo();
     }
     private ArrayList<piezaNormal> generarFichasal(pieza.Bando bando){
         ArrayList<piezaNormal>lista = new ArrayList<>();
@@ -230,6 +240,16 @@ public class tableroJuego extends JFrame{
             return null; 
         }
     }
+    private ImageIcon obtenerImagenReverso() {
+        String ruta = "/imagenes/reves.jpg"; 
+        java.net.URL url = getClass().getResource(ruta);
+        if (url != null) {
+            ImageIcon iconoOriginal = new ImageIcon(url);
+            Image imagenEscalada = iconoOriginal.getImage().getScaledInstance(cell - 4, cell - 4, Image.SCALE_SMOOTH);
+            return new ImageIcon(imagenEscalada);
+        }
+        return null;
+    }
     //una de las funciones recursivas que son solicitadas
     private void colocarFichasrecu(ArrayList<piezaNormal>fichas,int indice,int fila,int col){
         if(indice>=fichas.size()){
@@ -248,8 +268,17 @@ public class tableroJuego extends JFrame{
     private void refrescarTodo() {
         for (int f = 0; f < 10; f++) {
             for (int c = 0; c < 10; c++) {
-                if (matrizLogica[f][c] != null) {
-                    casillas[f][c].setIcon(obtenerImagenFicha(matrizLogica[f][c].getNombre()));
+                if (matrizLogica[f][c]!=null) {
+                    //aqui la condicion de que si es del jugador del turno mostrar, de lo contrario no
+                    if (matrizLogica[f][c].getBando()==turnoActual) {
+                        casillas[f][c].setIcon(obtenerImagenFicha(matrizLogica[f][c].getNombre()));
+                    }
+                    else{
+                        casillas[f][c].setIcon(obtenerImagenReverso());
+                    }
+                }
+                else{
+                    casillas[f][c].setIcon(null); // aseguramos que las vacias no tengan imagen
                 }
             }
         }
