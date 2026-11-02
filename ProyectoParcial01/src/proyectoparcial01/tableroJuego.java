@@ -240,8 +240,14 @@ public class tableroJuego extends JFrame{
             return null; 
         }
     }
-    private ImageIcon obtenerImagenReverso() {
-        String ruta = "/imagenes/reves.jpg"; 
+    private ImageIcon obtenerImagenReverso(pieza.Bando bando) {
+        String ruta = "";
+        if(bando==pieza.Bando.HEROES){
+            ruta = "/imagenes/reves1.jpg";
+        }
+        else {
+            ruta = "/imagenes/reves2.jpg";
+        }
         java.net.URL url = getClass().getResource(ruta);
         if (url != null) {
             ImageIcon iconoOriginal = new ImageIcon(url);
@@ -270,11 +276,12 @@ public class tableroJuego extends JFrame{
             for (int c = 0; c < 10; c++) {
                 if (matrizLogica[f][c]!=null) {
                     //aqui la condicion de que si es del jugador del turno mostrar, de lo contrario no
-                    if (matrizLogica[f][c].getBando()==turnoActual) {
+                    if (matrizLogica[f][c].getBando() == turnoActual) {
                         casillas[f][c].setIcon(obtenerImagenFicha(matrizLogica[f][c].getNombre()));
-                    }
-                    else{
-                        casillas[f][c].setIcon(obtenerImagenReverso());
+                    } 
+                    else {
+                        // ¡NUEVO! Le enviamos el bando de esta ficha oculta para que ponga su reverso correspondiente
+                        casillas[f][c].setIcon(obtenerImagenReverso(matrizLogica[f][c].getBando()));
                     }
                 }
                 else{
