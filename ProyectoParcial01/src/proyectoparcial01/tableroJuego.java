@@ -127,13 +127,42 @@ public class tableroJuego extends JFrame{
                                     colOrigen = c;
                                     casillas[f][c].setBackground(Color.YELLOW); 
                                 }
-                                //Si es una casilla vacía o del enemigo intentamos mover
+                                //si es una casilla vacia o del enemigo intentamos mover
                                 else{
                                     
                                     int difFila=Math.abs(filaOrigen-f);
                                     int difCol=Math.abs(colOrigen-c);
                                     
-                                    if((difFila + difCol)==1 && casillas[f][c].isEnabled()){
+                                    boolean movimientoValido = false;
+                                    
+                                    //validacion de movimiento normal de 1 casilla
+                                    if((difFila + difCol) == 1 && casillas[f][c].isEnabled()){
+                                        movimientoValido = true;
+                                    }
+                                    // validacion de movimiento largo exclusivo del explorador de rango 2
+                                    else if(matrizLogica[filaOrigen][colOrigen].getRango() == 2 && casillas[f][c].isEnabled()){
+                                        if (filaOrigen == f || colOrigen == c) { 
+                                            movimientoValido = true;
+                                            if (filaOrigen == f) { 
+                                                int paso = (c > colOrigen) ? 1 : -1;
+                                                for (int i = colOrigen + paso; i != c; i += paso) {
+                                                    if (matrizLogica[f][i] != null || !casillas[f][i].isEnabled()) {
+                                                        movimientoValido = false; break;
+                                                    }
+                                                }
+                                            } 
+                                            else { 
+                                                int paso=(f>filaOrigen) ? 1 : -1;
+                                                for (int i = filaOrigen + paso; i != f; i += paso) {
+                                                    if (matrizLogica[i][c] != null || !casillas[i][c].isEnabled()) {
+                                                        movimientoValido = false; break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    if(movimientoValido){
                                         
                                         if(matrizLogica[f][c]==null){
                                             casillas[f][c].setIcon(casillas[filaOrigen][colOrigen].getIcon());
@@ -179,10 +208,10 @@ public class tableroJuego extends JFrame{
                                         
                                     } 
                                     else{
-                                        JOptionPane.showMessageDialog(null, "Movimiento inválido. Solo 1 casilla arriba, abajo, izquierda o derecha.");
+                                        JOptionPane.showMessageDialog(null, "Movimiento invalido Solo 1 casilla arriba, abajo, izquierda o derecha.");
                                     }
                                     turnoActual=(turnoActual==pieza.Bando.HEROES)?pieza.Bando.VILLANOS:pieza.Bando.HEROES;
-                                    JOptionPane.showMessageDialog(null, "Cambio de bando, Ahora juegan: "+turnoActual);
+                                    JOptionPane.showMessageDialog(null, "Cambio de bando, ahora juegan: "+turnoActual);
                                     refrescarTodo();
                                     // limpiamos todo para el siguiente turno
                                     casillas[filaOrigen][colOrigen].setBackground(Color.LIGHT_GRAY);
