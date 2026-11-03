@@ -151,8 +151,18 @@ public class tableroJuego extends JFrame{
                                                 
                                             } 
                                             else if(resultado==atacable.resulCombate.GANA_DEFENSOR){
-                                                JOptionPane.showMessageDialog(null,"Tu pieza fue destruida!");
-                                                registrarBaja(atacante);
+                                                if (defensor.getRango()==0){
+                                                    JOptionPane.showMessageDialog(null, "HAS CAPTURADO LA TIERRA!\nLOS "+turnoActual+" HAN GANADO LA PARTIDA!");
+                                                    dispose(); //este dispose cierra la ventana del tablero
+                                                    return; // este termina la accion del combate
+                                                } 
+                                                else{
+                                                    JOptionPane.showMessageDialog(null,"Ganaste el combate!");
+                                                }
+                                                
+                                                registrarBaja(defensor);
+                                                casillas[f][c].setIcon(casillas[filaOrigen][colOrigen].getIcon());
+                                                matrizLogica[f][c] = atacante;
                                             }
                                             else{
                                                 JOptionPane.showMessageDialog(null,"Empate! Ambas piezas se destruyen");

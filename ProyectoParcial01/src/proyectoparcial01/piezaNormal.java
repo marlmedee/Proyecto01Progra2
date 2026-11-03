@@ -24,15 +24,29 @@ public class piezaNormal extends pieza implements movible, atacable {
     }
 
     @Override
-    public atacable.resulCombate defender(pieza atacante) {
-      
-        if (this.rango < atacante.getRango()) {
+    public atacable.resulCombate defender(pieza atacante){
+      //esta es la regla del minero (el de 3) que es el unico que sobrevive a las bombas
+        if(atacante.getRango() == 3 && this.getRango() == 11){
             return atacable.resulCombate.GANA_ATACANTE;
-        } else if (this.rango > atacante.getRango()) {
+        }
+        // esta es la regla del espia, if el espia que es el 1 ataca primero asesina al Mariscal (10)
+        if(atacante.getRango()==1&&this.getRango()==10){
+            return atacable.resulCombate.GANA_ATACANTE;
+        }
+        //esta es las reglas de las bombas(las 11) Destruye a cualquier otra pieza que intente tocarla
+        if(this.getRango()==11){
             return atacable.resulCombate.GANA_DEFENSOR;
         }
-      
-        return atacable.resulCombate.EMPATE;
+        // y esto es la logica del combate normal que el numero mayor gana
+        if(atacante.getRango()>this.getRango()){
+            return atacable.resulCombate.GANA_ATACANTE;
+        } 
+        else if(atacante.getRango() < this.getRango()){
+            return atacable.resulCombate.GANA_DEFENSOR;
+        }
+        else{
+            return atacable.resulCombate.EMPATE;
+        }
     }
 
     public String getNombre() {
