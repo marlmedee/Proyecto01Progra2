@@ -8,8 +8,9 @@ package proyectoparcial01;
  *
  * @author marlo
  */
-import java.awt.Image;
+
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.*;
 
 public class menuPrincipal extends JFrame {
@@ -22,13 +23,15 @@ public class menuPrincipal extends JFrame {
         this.manejador = m;
 
         setTitle("Marvel Stratego - Menu principal");
+        Image iconoVentana = new ImageIcon(getClass().getResource("/imagenes/strategoicon.jpg")).getImage();
+        setIconImage(iconoVentana);
         setSize(750, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //esto para cargar imagen de fondo
         ImageIcon iconoFondo = new ImageIcon(getClass().getResource("/imagenes/marvelmenu.jpg"));
 
-// Si necesitas ajustarle el tamaño a 800x600, se mantiene igual:
+        // Si necesitas ajustarle el tamaño a 800x600, se mantiene igual:
         Image imagenEscalada = iconoFondo.getImage().getScaledInstance(800, 600, Image.SCALE_SMOOTH);
         iconoFondo = new ImageIcon(imagenEscalada);
         JLabel lblFondo = new JLabel(iconoFondo);
@@ -70,20 +73,105 @@ public class menuPrincipal extends JFrame {
         itemPartidanueva.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                tableroJuego tablero = new tableroJuego(jugadorActivo);
+                tableroJuego tablero = new tableroJuego(jugadorActivo,manejador);
                 tablero.setVisible(true);
             }
         });
+        // esta accion es para cambiar contrasena
+        itemCambiarpass.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String passActual = JOptionPane.showInputDialog(null, "Ingresa tu contraseña actual:");
+                
+                // Verificamos que no haya cancelado y que la contraseña coincida
+                if (passActual != null) {
+                    if (passActual.equals(jugadorActivo.getPassword())) {
+                        String passNueva = JOptionPane.showInputDialog(null, "Ingresa tu NUEVA contraseña (exactamente 5 caracteres):");
+                        
+                        if (passNueva != null){
+                            if (passNueva.length() == 5) { // regla tipica del Stratego en programacion
+                                jugadorActivo.setPassword(passNueva);
+                                manejador.guardarUsuarios();
+                                JOptionPane.showMessageDialog(null, "Contraseña actualizada exitosamente!");
+                            }
+                            else {
+                                JOptionPane.showMessageDialog(null, "Error: La contraseña debe tener exactamente 5 caracteres", "Validacion", JOptionPane.WARNING_MESSAGE);
+                            }
+                        }
+                    }
+                    else {
+                        JOptionPane.showMessageDialog(null, "password incorrecta", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
 
+        //la accion para eliminar cuenta
+        itemeliminar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int confirmacion = JOptionPane.showConfirmDialog(null, 
+                        "Estas bien SEGURO de eliminar tu cuenta?\n(Se perdera todo tu historial)", 
+                        "Eliminar Cuenta", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (confirmacion == JOptionPane.YES_OPTION) {
+                    //verificacion de seguridad final
+                    String passValidacion = JOptionPane.showInputDialog(null, "Por seguridad, ingresa tu contraseña para eliminar:");
+                    if (passValidacion != null && passValidacion.equals(jugadorActivo.getPassword())) {
+                        
+                        // Aqui llamamos al manejador para borrar el usuario de la lista
+                        manejador.eliminarUsuario(jugadorActivo); // Asumiendo que tu manejadorUsuarios tiene este método
+                        
+                        JOptionPane.showMessageDialog(null, "Cuenta eliminada, cerrando sesion...");
+                        dispose(); // cierra el menu
+                        new MenuInicial().setVisible(true); // Regresa al inicio
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Contraseña incorrecta");
+                    }
+                }
+            }
+        });
+        // accion para ver los ultimos juegos
+        itemLog.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (jugadorActivo.getLogsPartidas().isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Aun no has jugado ninguna partida", "Historial vacío", JOptionPane.INFORMATION_MESSAGE);
+                } 
+                else {
+                    String texto="===HISTORIAL DE LAS PARTIDAS===\n\n";
+                    for (String log : jugadorActivo.getLogsPartidas()) {
+                        texto+=log+"\n";
+                    }
+                    JTextArea area = new JTextArea(texto);
+                    area.setEditable(false);
+                    JScrollPane scroll = new JScrollPane(area);
+                    scroll.setPreferredSize(new Dimension(350, 200));
+                    JOptionPane.showMessageDialog(null, scroll, "Log de Juegos", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
+        //evento de accion para ver ranking
+        itemranking.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Aquí idealmente pediríamos al manejador la lista de todos los jugadores para ordenarlos.
+                //aqui mostramos los puntos del usuario actual
+                JOptionPane.showMessageDialog(null, 
+                    "Agente: " + jugadorActivo.getUsername() + 
+                    "\nPuntos Acumulados: " + jugadorActivo.getPuntos() + 
+                    "\n\n(Mas adelante conectaremos la lista completa para comparar con otros jugadores)", 
+                    "Ranking Universo Marvel", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
         // esto es para cerrar sesion
         itemcerrarses.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int confirmacion = JOptionPane.showConfirmDialog(null, "¿Estás seguro que deseas cerrar sesión?", "Confirmar", JOptionPane.YES_NO_OPTION);
+                int confirmacion = JOptionPane.showConfirmDialog(null, "Estas seguro que deseas cerrar sesion?", "Confirmar", JOptionPane.YES_NO_OPTION);
                 if (confirmacion == JOptionPane.YES_OPTION) {
-                    dispose(); // Cierra el menú principal
+                    dispose(); // cierra el menu principal
                     
-                    // Retorna al menú inicial[cite: 8]
+                    // retorna al menú inicial
                     MenuInicial menuIni = new MenuInicial();
                     menuIni.setVisible(true);
                 }

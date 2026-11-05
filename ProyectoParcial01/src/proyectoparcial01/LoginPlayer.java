@@ -19,6 +19,8 @@ public class LoginPlayer extends JFrame{
     public LoginPlayer(manejadorUsuarios manejadorCentral){
         this.manejador = manejadorCentral;
         setTitle("Acceso al Sistema");
+        java.awt.Image iconoVentana = new ImageIcon(getClass().getResource("/imagenes/strategoicon.jpg")).getImage();
+        setIconImage(iconoVentana);
         setSize(320,250);
         setLayout(null);
         setLocationRelativeTo(null);
@@ -50,6 +52,11 @@ public class LoginPlayer extends JFrame{
                     menu.setVisible(true);
                     
                     dispose();
+                    for (java.awt.Window window : java.awt.Window.getWindows()){
+                        if (window instanceof MenuInicial) {
+                            window.dispose();
+                        }
+                    }
                 }
                 else {
                     JOptionPane.showMessageDialog(null, "Usuario o contraseña incorrectos", "Error", JOptionPane.ERROR_MESSAGE);

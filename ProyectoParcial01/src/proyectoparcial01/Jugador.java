@@ -8,14 +8,20 @@ package proyectoparcial01;
  *
  * @author marlo
  */
-public class Jugador {
+import java.util.ArrayList;
+import java.io.Serializable;
+public class Jugador implements Serializable{
     private String username;
     private String password;
+    private static final long serialVersionUID = 1L;
+    private ArrayList<String> logsPartidas;
     private int puntos;
     private int partidasHeroes;
     private int partidasVilanos;
 
     public Jugador(String username, String password) {
+        this.puntos = 0;
+        this.logsPartidas = new ArrayList<>();
         this.username = username;
         this.password = password;
         this.puntos = 0;
@@ -30,9 +36,14 @@ public class Jugador {
     public String getPassword() {
         return password;
     }
-
+    public ArrayList<String> getLogsPartidas(){
+        return logsPartidas;
+    }
     public int getPuntos() {
         return puntos;
+    }
+    public void setPassword(String password) {
+        this.password = password;
     }
     public void sumarPuntos(int puntosGanados){
         this.puntos +=puntosGanados;
@@ -42,5 +53,8 @@ public class Jugador {
     }
     public void sumarpartiVilla(){
         this.partidasVilanos++;
+    }
+    public void agregarLog(String resultado){
+        this.logsPartidas.add(resultado);
     }
 }

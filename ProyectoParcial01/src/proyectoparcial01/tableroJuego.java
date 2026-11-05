@@ -24,11 +24,16 @@ public class tableroJuego extends JFrame{
     private JPanel tablero;
     private JPanel cementerioHeroes;
     private JPanel cementerioVillanos;
+    private manejadorUsuarios manejador;
     private final java.util.HashMap<String, Image> cacheImagenes = new java.util.HashMap<>();
     private pieza.Bando turnoActual = pieza.Bando.HEROES;
-    public tableroJuego(Jugador j){
+    private ArrayList<String> bitacoraEventos = new ArrayList<>();
+    public tableroJuego(Jugador j, manejadorUsuarios m){
+        this.manejador = m;
         this.jugadorActivo = j;
         setTitle("Marvel Stratego - Tablero de batalla");
+        Image iconoVentana = new ImageIcon(getClass().getResource("/imagenes/strategoicon.jpg")).getImage();
+        setIconImage(iconoVentana);
         setResizable(true);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
       
@@ -141,7 +146,7 @@ public class tableroJuego extends JFrame{
                                     }
                                     // validacion de movimiento largo exclusivo del explorador de rango 2
                                     else if(matrizLogica[filaOrigen][colOrigen].getRango() == 2 && casillas[f][c].isEnabled()){
-                                        if (filaOrigen == f || colOrigen == c) { 
+                                        if (filaOrigen==f|| colOrigen== c) { 
                                             movimientoValido = true;
                                             if (filaOrigen == f) { 
                                                 int paso = (c > colOrigen) ? 1 : -1;
@@ -173,27 +178,32 @@ public class tableroJuego extends JFrame{
                                             piezaNormal defensor = matrizLogica[f][c];
                                             atacable.resulCombate resultado = defensor.defender(atacante);
                                             if(resultado==atacable.resulCombate.GANA_ATACANTE){
-                                                JOptionPane.showMessageDialog(null,"Ganaste el combate!");
-                                                registrarBaja(defensor);
-                                                casillas[f][c].setIcon(casillas[filaOrigen][colOrigen].getIcon());
-                                                matrizLogica[f][c] = atacante;
+                                                if (defensor.getRango() == 0) {
+                                                    bitacoraEventos.add(atacante.getNombre()+" ("+turnoActual+") CAPTURO LA TIERRA Y GANO LA PARTIDA!");
+                                                    //esto es de la suma puntos y los log
+                                                    jugadorActivo.sumarPuntos(3);
+                                                    jugadorActivo.agregarLog("VICTORIA: Capturaste la Tierra con el bando " + turnoActual + " (+3 puntos)");
                                                 
-                                            } 
-                                            else if(resultado==atacable.resulCombate.GANA_DEFENSOR){
-                                                if (defensor.getRango()==0){
-                                                    JOptionPane.showMessageDialog(null, "HAS CAPTURADO LA TIERRA!\nLOS "+turnoActual+" HAN GANADO LA PARTIDA!");
-                                                    dispose(); //este dispose cierra la ventana del tablero
-                                                    return; // este termina la accion del combate
-                                                } 
-                                                else{
+                                                    //guardamos los cambios inmediatamente en el archivo
+                                                    manejador.guardarUsuarios();
+                                                    JOptionPane.showMessageDialog(null, "HAS CAPTURADO LA TIERRA!\n¡LOS " + turnoActual + " HAN GANADO LA PARTIDA!");
+                                                    dispose(); 
+                                                    return; 
+                                                } else {
+                                                    bitacoraEventos.add(turnoActual + " ataco con " + atacante.getNombre() + " a " + defensor.getNombre() + " -> ¡GANO " + turnoActual + "!");
                                                     JOptionPane.showMessageDialog(null,"Ganaste el combate!");
                                                 }
-                                                
                                                 registrarBaja(defensor);
                                                 casillas[f][c].setIcon(casillas[filaOrigen][colOrigen].getIcon());
                                                 matrizLogica[f][c] = atacante;
+                                            } 
+                                            else if(resultado==atacable.resulCombate.GANA_DEFENSOR){
+                                                bitacoraEventos.add(turnoActual + " ataco con " + atacante.getNombre() + " a " + defensor.getNombre() + " -> ¡PERDIO " + turnoActual + "!");
+                                                JOptionPane.showMessageDialog(null,"Tu pieza fue destruida!");
+                                                registrarBaja(atacante);
                                             }
                                             else{
+                                                bitacoraEventos.add(turnoActual + " ataco con " + atacante.getNombre() + " a " + defensor.getNombre() + " -> EMPATE (Ambos mueren)!");
                                                 JOptionPane.showMessageDialog(null,"Empate! Ambas piezas se destruyen");
                                                 registrarBaja(atacante); 
                                                 registrarBaja(defensor);
@@ -201,7 +211,6 @@ public class tableroJuego extends JFrame{
                                                 matrizLogica[f][c] = null;
                                             }
                                         }
-                                        
                                         //sin importar quien gane el que ataca abandona su casilla original
                                         casillas[filaOrigen][colOrigen].setIcon(null);
                                         matrizLogica[filaOrigen][colOrigen] = null;
@@ -231,6 +240,62 @@ public class tableroJuego extends JFrame{
         pack();
         setLocationRelativeTo(null);
         refrescarTodo();
+        JMenuBar barraMenu = new JMenuBar();
+        JMenu menuOpciones = new JMenu("Opciones de Juego");
+        
+        JMenuItem itemGuardar = new JMenuItem("Guardar Partida");
+        JMenuItem itemCargar = new JMenuItem("Cargar Partida");
+        JMenuItem itemSalir = new JMenuItem("Rendirse / Salir del Tablero");
+        
+        itemGuardar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                guardarPartida();
+            }
+        });
+        itemCargar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cargarPartida();
+            }
+        });
+        JMenuItem itemBitacora = new JMenuItem("Ver bitacora de batalla");
+        
+        itemBitacora.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (bitacoraEventos.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Aun no ha habido combates en esta partida");
+                    return;
+                }
+                //unimos todos los textos con saltos de línea
+                String historial = "--- HISTORIAL DE BATALLAS ---\n\n";
+                for (String evento : bitacoraEventos) {
+                    historial += evento + "\n";
+                }
+                //creamos un cuadro de texto con scroll por si la partida es muy larga
+                JTextArea areaTexto = new JTextArea(historial);
+                areaTexto.setEditable(false);
+                JScrollPane scroll = new JScrollPane(areaTexto);
+                scroll.setPreferredSize(new Dimension(450, 300));
+                
+                JOptionPane.showMessageDialog(null, scroll, "Bitacora", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        //no olvides agregarlo al menu, justo antes del botón de salir
+        menuOpciones.add(itemBitacora);
+        itemSalir.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose(); //cierra el tablero
+            }
+        });
+        menuOpciones.add(itemGuardar);
+        menuOpciones.add(itemCargar);
+        menuOpciones.addSeparator();
+        menuOpciones.add(itemSalir);
+        barraMenu.add(menuOpciones);
+        setJMenuBar(barraMenu);
     }
     private ArrayList<piezaNormal> generarFichasal(pieza.Bando bando){
         ArrayList<piezaNormal>lista = new ArrayList<>();
@@ -319,7 +384,7 @@ public class tableroJuego extends JFrame{
                         casillas[f][c].setIcon(obtenerImagenFicha(matrizLogica[f][c].getNombre()));
                     } 
                     else {
-                        // ¡NUEVO! Le enviamos el bando de esta ficha oculta para que ponga su reverso correspondiente
+                        //Le enviamos el bando de esta ficha oculta para que ponga su reverso correspondiente
                         casillas[f][c].setIcon(obtenerImagenReverso(matrizLogica[f][c].getBando()));
                     }
                 }
@@ -347,6 +412,43 @@ public class tableroJuego extends JFrame{
                 cementerioVillanos.revalidate();
                 cementerioVillanos.repaint();
             }
+        }
+    }
+    //metodo para guardar partida
+    private void guardarPartida() {
+        try {
+            java.io.FileOutputStream archivoSalida = new java.io.FileOutputStream("partida_marvel.stratego");
+            java.io.ObjectOutputStream escritorObjetos = new java.io.ObjectOutputStream(archivoSalida);
+            //guardamos la matriz principal
+            escritorObjetos.writeObject(matrizLogica);
+            //guardamos de quien es el turno
+            escritorObjetos.writeObject(turnoActual);
+            escritorObjetos.close();
+            archivoSalida.close();
+            JOptionPane.showMessageDialog(this, "Partida guardada exitosamente!");
+            escritorObjetos.writeObject(turnoActual);
+            escritorObjetos.writeObject(bitacoraEventos);
+        } catch (Exception ex){
+            JOptionPane.showMessageDialog(this, "Error al guardar: " + ex.getMessage());
+        }
+    }
+    //metodo para cargar la partida
+    private void cargarPartida(){
+        try {
+            java.io.FileInputStream archivoEntrada = new java.io.FileInputStream("partida_marvel.stratego");
+            java.io.ObjectInputStream lectorObjetos = new java.io.ObjectInputStream(archivoEntrada);
+            //recuperamos los objetos exactos
+            matrizLogica = (piezaNormal[][]) lectorObjetos.readObject();
+            turnoActual = (pieza.Bando) lectorObjetos.readObject();
+            lectorObjetos.close();
+            archivoEntrada.close();
+            //actualizamos la interfaz grafica para que muestre el estado cargado
+            refrescarTodo(); 
+            JOptionPane.showMessageDialog(this, "partida cargada con exito! Juegan los " + turnoActual);
+            turnoActual = (pieza.Bando) lectorObjetos.readObject();
+            bitacoraEventos = (ArrayList<String>) lectorObjetos.readObject();
+        } catch(Exception ex){
+            JOptionPane.showMessageDialog(this, "no hay partida guardada o ocurrio un error al cargar");
         }
     }
 }

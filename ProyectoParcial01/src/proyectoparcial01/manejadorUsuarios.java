@@ -9,10 +9,12 @@ package proyectoparcial01;
  * @author marlo
  */
 import java.util.ArrayList;
+import java.io.*;
 public class manejadorUsuarios {
     private ArrayList<Jugador> listjuga;
     public manejadorUsuarios(){
-        listjuga = new ArrayList<>();
+        cargarUsuarios();
+        
     }
     public Jugador buscarjuga(String username){
         for (Jugador j:listjuga) {
@@ -32,6 +34,7 @@ public class manejadorUsuarios {
         }
         Jugador nuevojuga = new Jugador(username,password);
         listjuga.add(nuevojuga);
+        guardarUsuarios();
     }
     public Jugador iniciasesion(String username,String password){
         Jugador j = buscarjuga(username);
@@ -40,4 +43,33 @@ public class manejadorUsuarios {
         }
         return null;
     }
+    public void eliminarUsuario(Jugador usuarioAEliminar) {
+        listjuga.remove(usuarioAEliminar);
+        guardarUsuarios();
+    }
+    public void guardarUsuarios() {
+        try{
+            FileOutputStream archivo = new FileOutputStream("registro_jugadores.stratego");
+            ObjectOutputStream escritor = new ObjectOutputStream(archivo);
+            escritor.writeObject(listjuga);
+            escritor.close();
+            archivo.close();
+        } catch (Exception e) {
+            System.out.println("Error al guardar usuarios: " + e.getMessage());
+        }
+        
+    }
+    private void cargarUsuarios(){
+        try{
+            FileInputStream archivo = new FileInputStream("registro_jugadores.stratego");
+            ObjectInputStream lector = new ObjectInputStream(archivo);
+            listjuga = (ArrayList<Jugador>) lector.readObject();
+            lector.close();
+            archivo.close();
+        } catch (Exception e){
+            //si hay un error o es la primera vez que se corre el juego y el archivo no existe, iniciamos la lista vacía
+            listjuga = new ArrayList<>();
+        }
+    }
 }
+
