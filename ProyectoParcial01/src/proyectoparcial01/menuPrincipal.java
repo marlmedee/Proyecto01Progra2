@@ -12,6 +12,7 @@ package proyectoparcial01;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 
 public class menuPrincipal extends JFrame {
 
@@ -73,7 +74,39 @@ public class menuPrincipal extends JFrame {
         itemPartidanueva.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                tableroJuego tablero = new tableroJuego(jugadorActivo,manejador);
+                String user2 = JOptionPane.showInputDialog(null, "Ingrese el Username del Jugador 2 (Rival):");
+                //si le dio a cancelar o lo dejo vacío
+                if (user2 == null||user2.trim().isEmpty()) {
+                    return; 
+                }
+                //validar que no juegue contra sí mismo
+                if (user2.equals(jugadorActivo.getUsername())) {
+                    JOptionPane.showMessageDialog(null, "Error: No puedes jugar contra ti mismo.", "Selección Inválida", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                //Verificar que el Jugador 2 exista en el sistema
+                Jugador rival = manejador.buscarjuga(user2);
+                if (rival == null) {
+                    JOptionPane.showMessageDialog(null, "Error: El agente '" + user2 + "' no está registrado en el sistema.", "Jugador no encontrado", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                //aqui es de elegir el Bando
+                String[] opciones = {"Héroes", "Villanos"};
+                int seleccion = JOptionPane.showOptionDialog(null, 
+                        jugadorActivo.getUsername().toUpperCase() + " vs " + rival.getUsername().toUpperCase() + 
+                        "\n\n" + jugadorActivo.getUsername() + ", elige tu bando:", 
+                        "Preparación de Combate", 
+                        JOptionPane.DEFAULT_OPTION, 
+                        JOptionPane.QUESTION_MESSAGE, 
+                        null, opciones, opciones[0]);
+                // si cerro la ventana sin elegir
+                if (seleccion == JOptionPane.CLOSED_OPTION) {
+                    return; 
+                }
+                // Asignamos el bando elegido
+                pieza.Bando bandoJ1 = (seleccion == 0) ? pieza.Bando.HEROES : pieza.Bando.VILLANOS;
+                //Iniciar el tablero con toda la informacion correcta
+                tableroJuego tablero = new tableroJuego(jugadorActivo, rival, bandoJ1, manejador);
                 tablero.setVisible(true);
             }
         });
@@ -133,15 +166,13 @@ public class menuPrincipal extends JFrame {
         // accion para ver los ultimos juegos
         itemLog.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent e) { 
                 if (jugadorActivo.getLogsPartidas().isEmpty()) {
                     JOptionPane.showMessageDialog(null, "Aun no has jugado ninguna partida", "Historial vacío", JOptionPane.INFORMATION_MESSAGE);
                 } 
                 else {
-                    String texto="===HISTORIAL DE LAS PARTIDAS===\n\n";
-                    for (String log : jugadorActivo.getLogsPartidas()) {
-                        texto+=log+"\n";
-                    }
+                    // aqui va la llamda recursiva para armar el texto
+                    String texto = "===HISTORIAL DE LAS PARTIDAS===\n\n" + construirLogRecursivo(jugadorActivo.getLogsPartidas(), 0);
                     JTextArea area = new JTextArea(texto);
                     area.setEditable(false);
                     JScrollPane scroll = new JScrollPane(area);
@@ -154,13 +185,54 @@ public class menuPrincipal extends JFrame {
         itemranking.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Aquí idealmente pediríamos al manejador la lista de todos los jugadores para ordenarlos.
-                //aqui mostramos los puntos del usuario actual
-                JOptionPane.showMessageDialog(null, 
-                    "Agente: " + jugadorActivo.getUsername() + 
-                    "\nPuntos Acumulados: " + jugadorActivo.getPuntos() + 
-                    "\n\n(Mas adelante conectaremos la lista completa para comparar con otros jugadores)", 
-                    "Ranking Universo Marvel", JOptionPane.INFORMATION_MESSAGE);
+               ArrayList<Jugador> ranking = manejador.getRanking();
+                if(ranking.isEmpty()){
+                    JOptionPane.showMessageDialog(null, "Aun no hay jugadores registrados para el ranking.");
+                    return;
+                }
+                // llamada recu
+                String texto = "=== RANKING GLOBAL DEL UNIVERSO MARVEL ===\n\n" + construirRankingRecursivo(ranking, 0);
+                // creamos un area de texto por si hay muchos jugadores registrados
+                JTextArea area = new JTextArea(texto);
+                area.setEditable(false);
+                JScrollPane scroll = new JScrollPane(area);
+                scroll.setPreferredSize(new Dimension(300, 250));
+                JOptionPane.showMessageDialog(null, scroll, "Ranking de Jugadores", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        //accion para ver estadisticas de batallas
+        itemBatallas.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ArrayList<Jugador> todosLosJugadores = manejador.getRanking();
+                int usuariosActivos = todosLosJugadores.size();
+                int usuariosHistoricos = usuariosActivos + manejador.getUsuariosEliminados();
+                int victoriasHeroesGlobal = 0;
+                int victoriasVillanosGlobal = 0;
+                
+                //rRecorremos a todos los jugadores del sistema para sumar sus victorias
+                for (Jugador j : todosLosJugadores) {
+                    victoriasHeroesGlobal += j.getPartidasHeroes();
+                    victoriasVillanosGlobal += j.getPartidasVilanos();
+                }
+                int totalBatallas = victoriasHeroesGlobal + victoriasVillanosGlobal;
+                String reporte = "=== ESTADÍSTICAS GLOBALES DEL UNIVERSO MARVEL ===\n\n";
+                reporte += "Usuarios Activos: "+usuariosActivos+"\n";
+                reporte += "Usuarios Historicos (incluye eliminados): "+usuariosHistoricos+"\n";
+                reporte += "Partidas Totales Jugadas: "+totalBatallas+"\n";
+                reporte += "Victorias Totales de HEROES: "+victoriasHeroesGlobal+"\n";
+                reporte += "Victorias Totales de VILLANOS: "+victoriasVillanosGlobal+"\n\n";
+                if(victoriasHeroesGlobal > victoriasVillanosGlobal){
+                    reporte += "El bien y la justicia están triunfando en el universo!";
+                } 
+                else if(victoriasVillanosGlobal > victoriasHeroesGlobal) {
+                    reporte += "El caos y los villanos dominan el universo actual!";
+                } 
+                else{
+                    reporte += "El universo se encuentra en perfecto equilibrio neutral";
+                }
+                
+                JOptionPane.showMessageDialog(null, reporte, "Estadisticas Globales de Batalla", JOptionPane.INFORMATION_MESSAGE);
             }
         });
         // esto es para cerrar sesion
@@ -171,12 +243,34 @@ public class menuPrincipal extends JFrame {
                 if (confirmacion == JOptionPane.YES_OPTION) {
                     dispose(); // cierra el menu principal
                     
-                    // retorna al menú inicial
+                    //retorna al menu inicial
                     MenuInicial menuIni = new MenuInicial();
                     menuIni.setVisible(true);
                 }
             }
         });
+    }
+    // la recursiva num 2 construye el texto del ranking global (
+    private String construirRankingRecursivo(ArrayList<Jugador> ranking, int index) {
+        //si ya recorrimos toda la lista, retornamos ""
+        if (index >= ranking.size()) {
+            return "";
+        }
+        // Paso recursivo: tomamos el jugador actual y llamamos a la función para el siguiente
+        Jugador j = ranking.get(index);
+        String linea = (index + 1) + ". Agente: " + j.getUsername() + " | Puntos: " + j.getPuntos() + "\n";
+        
+        return linea + construirRankingRecursivo(ranking, index + 1);
+    }
+
+    // la recursiva 3 construye el texto del Historial de partidas 
+    private String construirLogRecursivo(ArrayList<String> logs, int index) {
+        // Caso base: si ya no hay logs, retornamos ""
+        if (index >= logs.size()) {
+            return "";
+        }
+        //tomamos el log actual y llamamos a la función para el siguiente
+        return logs.get(index) + "\n" + construirLogRecursivo(logs, index + 1);
     }
 }
 

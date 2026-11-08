@@ -25,12 +25,19 @@ public class tableroJuego extends JFrame{
     private JPanel cementerioHeroes;
     private JPanel cementerioVillanos;
     private manejadorUsuarios manejador;
+    private Jugador jugador2;
+    private pieza.Bando bandoJugador1;
+    private pieza.Bando bandoJugador2;
     private final java.util.HashMap<String, Image> cacheImagenes = new java.util.HashMap<>();
     private pieza.Bando turnoActual = pieza.Bando.HEROES;
     private ArrayList<String> bitacoraEventos = new ArrayList<>();
-    public tableroJuego(Jugador j, manejadorUsuarios m){
+    public tableroJuego(Jugador j1, Jugador j2, pieza.Bando bandoJ1, manejadorUsuarios m){
         this.manejador = m;
-        this.jugadorActivo = j;
+        this.jugadorActivo = j1;
+        this.jugador2 = j2;
+        this.bandoJugador1 = bandoJ1;
+        // El bando del jugador 2 es el opuesto automáticamente
+        this.bandoJugador2 = (bandoJ1 == pieza.Bando.HEROES) ? pieza.Bando.VILLANOS : pieza.Bando.HEROES;
         setTitle("Marvel Stratego - Tablero de batalla");
         Image iconoVentana = new ImageIcon(getClass().getResource("/imagenes/strategoicon.jpg")).getImage();
         setIconImage(iconoVentana);
@@ -114,16 +121,21 @@ public class tableroJuego extends JFrame{
                                         return; // Cancela el clic
                                     }
                                     // regla la tierra 0 y las bombas 1 no se mueven
-                                    if (matrizLogica[f][c].getRango()==0||matrizLogica[f][c].getRango()==11) {
-                                        JOptionPane.showMessageDialog(null, "las bombas y la tierra no se pueden mover");
-                                    }
-                                    else{
-                                        filaOrigen=f;
-                                        colOrigen=c;
-                                        casillas[f][c].setBackground(Color.YELLOW); 
+                                    try {
+                                        if (matrizLogica[f][c].getRango() == 0 || matrizLogica[f][c].getRango() == 11) {
+                                            throw new MovimientoInvalidoException("Las bombas y la TIERRA son piezas estáticas y no se pueden mover.");
+                                        }
+                                        else {
+                                            filaOrigen=f;
+                                            colOrigen=c;
+                                            casillas[f][c].setBackground(Color.YELLOW); 
+                                        }
+                                    } catch (MovimientoInvalidoException ex) {
+                                        JOptionPane.showMessageDialog(null, ex.getMessage(), "Movimiento Prohibido", JOptionPane.WARNING_MESSAGE);
                                     }
                                 }
                             } 
+ 
                             else{
                                 //si toca otra pieza de su bando cambiamos la seleccion
                                 if (matrizLogica[f][c] != null && matrizLogica[f][c].getBando() == matrizLogica[filaOrigen][colOrigen].getBando()) {
@@ -182,6 +194,12 @@ public class tableroJuego extends JFrame{
                                                     bitacoraEventos.add(atacante.getNombre()+" ("+turnoActual+") CAPTURO LA TIERRA Y GANO LA PARTIDA!");
                                                     //esto es de la suma puntos y los log
                                                     jugadorActivo.sumarPuntos(3);
+                                                    if (turnoActual==pieza.Bando.HEROES) {
+                                                        jugadorActivo.sumarpartiHero();
+                                                    }
+                                                    else {
+                                                        jugadorActivo.sumarpartiVilla();
+                                                    }
                                                     jugadorActivo.agregarLog("VICTORIA: Capturaste la Tierra con el bando " + turnoActual + " (+3 puntos)");
                                                 
                                                     //guardamos los cambios inmediatamente en el archivo
@@ -222,6 +240,10 @@ public class tableroJuego extends JFrame{
                                     turnoActual=(turnoActual==pieza.Bando.HEROES)?pieza.Bando.VILLANOS:pieza.Bando.HEROES;
                                     JOptionPane.showMessageDialog(null, "Cambio de bando, ahora juegan: "+turnoActual);
                                     refrescarTodo();
+                                    if (!tieneMovimientosValidos(turnoActual)) {
+                                        declararGanadorPorBloqueo();
+                                        return; // Corta la ejecución para que no limpie la selección
+                                    }
                                     // limpiamos todo para el siguiente turno
                                     casillas[filaOrigen][colOrigen].setBackground(Color.LIGHT_GRAY);
                                     filaOrigen=-1;
@@ -269,7 +291,7 @@ public class tableroJuego extends JFrame{
                     return;
                 }
                 //unimos todos los textos con saltos de línea
-                String historial = "--- HISTORIAL DE BATALLAS ---\n\n";
+                String historial = "==== HISTORIAL DE BATALLAS ====\n\n";
                 for (String evento : bitacoraEventos) {
                     historial += evento + "\n";
                 }
@@ -282,12 +304,48 @@ public class tableroJuego extends JFrame{
                 JOptionPane.showMessageDialog(null, scroll, "Bitacora", JOptionPane.INFORMATION_MESSAGE);
             }
         });
-        //no olvides agregarlo al menu, justo antes del botón de salir
         menuOpciones.add(itemBitacora);
         itemSalir.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                dispose(); //cierra el tablero
+            int confirmacion = JOptionPane.showConfirmDialog(null, 
+                        "Estas seguro que deseas rendirte?\nEsto le dara 3 puntos a tu oponente", 
+                        "Confirmar Retiro", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if(confirmacion == JOptionPane.YES_OPTION){
+                    // Determinar quien se rinde (el del turno actual) y quien gana
+                    Jugador elQueSeRinde;
+                    Jugador elGanador;
+                    String bandoRinde;
+                    String bandoGana;
+                    if(turnoActual == bandoJugador1){
+                        elQueSeRinde = jugadorActivo;
+                        elGanador = jugador2;
+                        bandoRinde = "HEROES";
+                        bandoGana = "VILLANOS";
+                    }
+                    else{
+                        elQueSeRinde = jugador2;
+                        elGanador = jugadorActivo;
+                        bandoRinde = "VILLANOS";
+                        bandoGana = "HÉROES";
+                    }
+                    // darle los 3 puntos al rival si se sale el jugador 
+                    elGanador.sumarPuntos(3);
+                    if (bandoGana.equals("HEROES")) {
+                        elGanador.sumarpartiHero();
+                    }
+                    else{
+                        elGanador.sumarpartiVilla();
+                    }
+                    String eventoLog = elGanador.getUsername() + " usando " + bandoGana + 
+                                       " ha ganado ya que " + elQueSeRinde.getUsername() + 
+                                       " usando " + bandoRinde + " se ha retirado del juego";
+                    jugadorActivo.agregarLog(eventoLog);
+                    jugador2.agregarLog(eventoLog);
+                    manejador.guardarUsuarios(); //aqui guardamos el nuevo puntaje
+                    JOptionPane.showMessageDialog(null, elGanador.getUsername() + " gana por retiro!");
+                    dispose(); // hace que se cierre el tablero y nos regrese al menu
+                }
             }
         });
         menuOpciones.add(itemGuardar);
@@ -298,38 +356,90 @@ public class tableroJuego extends JFrame{
         setJMenuBar(barraMenu);
     }
     private ArrayList<piezaNormal> generarFichasal(pieza.Bando bando){
-        ArrayList<piezaNormal>lista = new ArrayList<>();
-        String p=(bando==pieza.Bando.HEROES)? "h":"v";
-        lista.add(new piezaNormal(0,bando,p+"0_1")); 
-        lista.add(new piezaNormal(10,bando,p+"10_1"));
-        lista.add(new piezaNormal(9,bando,p+"9_1"));
-        for(int i = 1; i <= 2; i++){
-           lista.add(new piezaNormal(8,bando,p+"8_"+i));
+        String p = (bando == pieza.Bando.HEROES) ? "h" : "v";
+        piezaNormal[][] gridTemporal = new piezaNormal[4][10];
+        java.util.Random rnd = new java.util.Random();
+        // Mapeo de las 4 filas de como se forman que va dependiendo del bando
+        int filaFondo = (bando == pieza.Bando.HEROES) ? 3 : 0; // Fila 9 para H, Fila 0 para V
+        int filaMediaAtras = (bando == pieza.Bando.HEROES) ? 2 : 1; // Fila 8 para H, Fila 1 para V
+        int filaMediaAdelante = (bando == pieza.Bando.HEROES) ? 1 : 2; // Fila 7 para H, Fila 2 para V
+        int filaFrente = (bando == pieza.Bando.HEROES) ? 0 : 3; // Fila 6 para H, Fila 3 para V
+        //aqui separamos las piezas por categorias diferentes
+        piezaNormal tierra = new piezaNormal(0, bando, p + "0_1");
+        ArrayList<piezaNormal> bombas = new ArrayList<>();
+        for (int i = 1; i <= 6; i++){
+            bombas.add(new piezaNormal(11, bando, p + "11_" + i));
+        }
+        ArrayList<piezaNormal> exploradores = new ArrayList<>(); // Rango 2
+        for (int i = 1; i <= 8; i++){
+            exploradores.add(new piezaNormal(2, bando, p + "2_" + i));
+        }
+        ArrayList<piezaNormal> resto = new ArrayList<>();
+        resto.add(new piezaNormal(10,bando,p+"10_1"));
+        resto.add(new piezaNormal(9,bando,p+"9_1"));
+        for (int i = 1; i <= 2; i++){
+            resto.add(new piezaNormal(8,bando,p+"8_"+i));
         }
         for (int i = 1; i <= 3; i++){
-            lista.add(new piezaNormal(7,bando,p+"7_"+i));
+            resto.add(new piezaNormal(7,bando,p+"7_"+i));
         }
         for (int i = 1; i <= 4; i++){
-            lista.add(new piezaNormal(6,bando,p+"6_"+i));
+            resto.add(new piezaNormal(6,bando,p+"6_"+i));
         }
         for (int i = 1; i <= 4; i++){
-            lista.add(new piezaNormal(5,bando,p+"5_" +i));
+            resto.add(new piezaNormal(5,bando,p+"5_"+i));
         }
         for (int i = 1; i <= 4; i++){
-            lista.add(new piezaNormal(4,bando,p+"4_" +i));
+            resto.add(new piezaNormal(4,bando,p+"4_"+i));
         }
         for (int i = 1; i <= 5; i++){
-            lista.add(new piezaNormal(3,bando,p+"3_"+i));
+            resto.add(new piezaNormal(3,bando,p+"3_"+i));
         }
-        for (int i = 1; i <= 8; i++){
-            lista.add(new piezaNormal(2,bando,p+"2_"+i));
+        resto.add(new piezaNormal(1,bando,p+"1_1"));
+        //Tierra en la última fila (sin tocar esquinas 0 y 9)
+        int colTierra = 1 + rnd.nextInt(8); 
+        gridTemporal[filaFondo][colTierra] = tierra;
+        // Bombas protegiendo la Tierra
+        gridTemporal[filaFondo][colTierra - 1] = bombas.remove(0); // Izquierda
+        gridTemporal[filaFondo][colTierra + 1] = bombas.remove(0); // Derecha
+        gridTemporal[filaMediaAtras][colTierra] = bombas.remove(0); // En frente
+        //Bombas restantes aleatoriamente en las 2 filas del fondo
+        while (!bombas.isEmpty()) {
+            int f = rnd.nextBoolean() ? filaFondo : filaMediaAtras;
+            int c = rnd.nextInt(10);
+            if (gridTemporal[f][c] == null) {
+                gridTemporal[f][c] = bombas.remove(0);
+            }
         }
-        lista.add(new piezaNormal(1,bando,p+"1_1"));
-        for (int i = 1; i <= 6; i++){
-           lista.add(new piezaNormal(11,bando,p+"11_"+i));
+        // Rango 2 en las dos filas delanteras
+        while (!exploradores.isEmpty()) {
+            int f = rnd.nextBoolean() ? filaMediaAdelante : filaFrente;
+            int c = rnd.nextInt(10);
+            if (gridTemporal[f][c] == null) {
+                gridTemporal[f][c] = exploradores.remove(0);
+            }
         }
-        Collections.shuffle(lista);
-        return lista;
+        //  rellenamos aleatoriamente los espacios vacios
+        Collections.shuffle(resto);
+        ArrayList<Point> celdasVacias = new ArrayList<>();
+        for (int f = 0; f < 4; f++) {
+            for (int c = 0; c < 10; c++) {
+                if (gridTemporal[f][c] == null) celdasVacias.add(new Point(f, c));
+            }
+        }
+        Collections.shuffle(celdasVacias);
+        for (int i = 0; i < resto.size(); i++) {
+            Point pto = celdasVacias.get(i);
+            gridTemporal[pto.x][pto.y] = resto.get(i);
+        }
+        //convertir el bloque 4x10 a una lista lineal ordenada para la funcion recursiva
+        ArrayList<piezaNormal> listaFinal = new ArrayList<>();
+        for (int f = 0; f < 4; f++) {
+            for (int c = 0; c < 10; c++) {
+                listaFinal.add(gridTemporal[f][c]);
+            }
+        }
+        return listaFinal;
     }
     private ImageIcon obtenerImagenFicha(String nombreArchivo) {
         String ruta = "/imagenes/" + nombreArchivo + ".png";
@@ -423,11 +533,11 @@ public class tableroJuego extends JFrame{
             escritorObjetos.writeObject(matrizLogica);
             //guardamos de quien es el turno
             escritorObjetos.writeObject(turnoActual);
+            escritorObjetos.writeObject(bitacoraEventos);
             escritorObjetos.close();
             archivoSalida.close();
             JOptionPane.showMessageDialog(this, "Partida guardada exitosamente!");
-            escritorObjetos.writeObject(turnoActual);
-            escritorObjetos.writeObject(bitacoraEventos);
+            
         } catch (Exception ex){
             JOptionPane.showMessageDialog(this, "Error al guardar: " + ex.getMessage());
         }
@@ -440,15 +550,87 @@ public class tableroJuego extends JFrame{
             //recuperamos los objetos exactos
             matrizLogica = (piezaNormal[][]) lectorObjetos.readObject();
             turnoActual = (pieza.Bando) lectorObjetos.readObject();
+            bitacoraEventos = (ArrayList<String>) lectorObjetos.readObject();
             lectorObjetos.close();
             archivoEntrada.close();
             //actualizamos la interfaz grafica para que muestre el estado cargado
             refrescarTodo(); 
             JOptionPane.showMessageDialog(this, "partida cargada con exito! Juegan los " + turnoActual);
-            turnoActual = (pieza.Bando) lectorObjetos.readObject();
-            bitacoraEventos = (ArrayList<String>) lectorObjetos.readObject();
         } catch(Exception ex){
             JOptionPane.showMessageDialog(this, "no hay partida guardada o ocurrio un error al cargar");
         }
+    }
+    // este metodo es el que revisa si el bando actual tiene algun movimiento legal
+    private boolean tieneMovimientosValidos(pieza.Bando bando) {
+        for (int f = 0; f < 10; f++) {
+            for (int c = 0; c < 10; c++) {
+                piezaNormal p = matrizLogica[f][c];
+                
+                // Si encontramos una pieza del bando actual
+                if (p != null && p.getBando() == bando) {
+                    // Si es Tierra (0) o Bomba (11), no evaluamos porque no se mueven
+                    if (p.getRango() == 0 || p.getRango() == 11) {
+                        continue;
+                    }
+                    
+                    //verificamos las 4 direcciones
+                    int[][] direcciones = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+                    for (int[] dir : direcciones) {
+                        int nuevaFila = f + dir[0];
+                        int nuevaCol = c + dir[1];
+                        
+                        // Si esta dentro de los límites del tablero
+                        if (nuevaFila >= 0 && nuevaFila < 10 && nuevaCol >= 0 && nuevaCol < 10) {
+                            // Si no es la zona prohibida de en medio
+                            if (casillas[nuevaFila][nuevaCol].isEnabled()) {
+                                // Si la casilla esta vacía o tiene un enemigo, ES un movimiento válido
+                                if (matrizLogica[nuevaFila][nuevaCol] == null || matrizLogica[nuevaFila][nuevaCol].getBando() != bando) {
+                                    return true; // Encontramos al menos 1 movimiento, así que aún puede jugar
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false; //esto reviso todo el tablero y no encontro ni un solo movimiento
+    }
+
+    //este es el que finaliza el juego si alguien se queda sin movimientos
+    private void declararGanadorPorBloqueo() {
+        Jugador perdedor;
+        Jugador ganador;
+        String bandoPerdedor;
+        String bandoGanador;
+
+        if (turnoActual == bandoJugador1) {
+            perdedor = jugadorActivo;
+            ganador = jugador2;
+            bandoPerdedor = (bandoJugador1 == pieza.Bando.HEROES) ? "HÉROES" : "VILLANOS";
+            bandoGanador = (bandoPerdedor.equals("HÉROES")) ? "VILLANOS" : "HÉROES";
+        } else {
+            perdedor = jugador2;
+            ganador = jugadorActivo;
+            bandoPerdedor = (bandoJugador2 == pieza.Bando.HEROES) ? "HÉROES" : "VILLANOS";
+            bandoGanador = (bandoPerdedor.equals("HÉROES")) ? "VILLANOS" : "HÉROES";
+        }
+
+        // Sumar puntos y estadísticas al ganador
+        ganador.sumarPuntos(3);
+        if (bandoGanador.equals("HEROES")) {
+            ganador.sumarpartiHero();
+        } else {
+            ganador.sumarpartiVilla();
+        }
+        String log = perdedor.getUsername() + " usando " + bandoPerdedor + 
+                     " ha perdido por no tener movimientos validos disponibles ante " + 
+                     ganador.getUsername() + " (FECHA: " + java.time.LocalDate.now() + ")";
+        
+        jugadorActivo.agregarLog(log);
+        jugador2.agregarLog(log);
+        manejador.guardarUsuarios();
+        JOptionPane.showMessageDialog(null,perdedor.getUsername() + " se ha quedado sin piezas moviles o esta completamente bloqueado!\n\n" 
+                                            + ganador.getUsername() + " GANA LA PARTIDA por regla tecnica y obtiene +3 puntos!");
+        dispose(); 
     }
 }

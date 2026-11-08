@@ -9,7 +9,7 @@ package proyectoparcial01;
  * @author marlo
  */
 import java.io.Serializable;
-public class piezaNormal extends pieza implements movible, atacable {
+public class piezaNormal extends pieza implements movible, atacable, Serializable {
     public piezaNormal(int rango,pieza.Bando bando, String nombre){
         super(rango,bando,nombre);
     }

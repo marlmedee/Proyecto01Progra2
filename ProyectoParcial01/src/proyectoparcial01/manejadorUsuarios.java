@@ -11,6 +11,7 @@ package proyectoparcial01;
 import java.util.ArrayList;
 import java.io.*;
 public class manejadorUsuarios {
+    private int usuariosEliminados = 0;
     private ArrayList<Jugador> listjuga;
     public manejadorUsuarios(){
         cargarUsuarios();
@@ -45,6 +46,7 @@ public class manejadorUsuarios {
     }
     public void eliminarUsuario(Jugador usuarioAEliminar) {
         listjuga.remove(usuarioAEliminar);
+        usuariosEliminados++; 
         guardarUsuarios();
     }
     public void guardarUsuarios() {
@@ -52,6 +54,7 @@ public class manejadorUsuarios {
             FileOutputStream archivo = new FileOutputStream("registro_jugadores.stratego");
             ObjectOutputStream escritor = new ObjectOutputStream(archivo);
             escritor.writeObject(listjuga);
+            escritor.writeInt(usuariosEliminados);
             escritor.close();
             archivo.close();
         } catch (Exception e) {
@@ -64,12 +67,34 @@ public class manejadorUsuarios {
             FileInputStream archivo = new FileInputStream("registro_jugadores.stratego");
             ObjectInputStream lector = new ObjectInputStream(archivo);
             listjuga = (ArrayList<Jugador>) lector.readObject();
+            usuariosEliminados = lector.readInt();
             lector.close();
             archivo.close();
         } catch (Exception e){
             //si hay un error o es la primera vez que se corre el juego y el archivo no existe, iniciamos la lista vacía
             listjuga = new ArrayList<>();
+            usuariosEliminados = 0;
         }
+    }
+    public int getUsuariosEliminados() {
+        return usuariosEliminados;
+    }
+    public ArrayList<Jugador> getRanking() {
+        //hacemos copia de la original para no alterar el orden
+        ArrayList<Jugador> listaOrdenada = new ArrayList<>(listjuga);
+        
+        //con bubble sort hacemos para ordenar de mayor a menor
+        for (int i = 0; i < listaOrdenada.size()-1; i++) {
+            for (int j = 0; j < listaOrdenada.size()-i-1; j++) {
+                if (listaOrdenada.get(j).getPuntos() < listaOrdenada.get(j + 1).getPuntos()) {
+                    // aqui intercambiamos
+                    Jugador temp = listaOrdenada.get(j);
+                    listaOrdenada.set(j, listaOrdenada.get(j + 1));
+                    listaOrdenada.set(j + 1, temp);
+                }
+            }
+        }
+        return listaOrdenada;
     }
 }
 

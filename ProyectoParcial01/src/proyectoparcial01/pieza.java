@@ -9,7 +9,7 @@ package proyectoparcial01;
  * @author marlo
  */
 import java.io.Serializable;
-public abstract class pieza {
+public abstract class pieza implements Serializable{
     public enum Bando{
         HEROES, VILLANOS
     }
