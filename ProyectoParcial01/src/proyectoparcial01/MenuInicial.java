@@ -18,25 +18,25 @@ private JButton btnCrearPlayer;
 private manejadorUsuarios manejadorcentral;
 public MenuInicial() {
     manejadorcentral = new manejadorUsuarios();
-        setTitle("Marvel Stratego - Inicio");
+        setTitle("Marvel Stratego");
         Image iconoVentana = new ImageIcon(getClass().getResource("/imagenes/strategoicon.jpg")).getImage();
         setIconImage(iconoVentana);
-        setSize(400, 300);
+        setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         setLayout(null); // Fundamental para no usar auto-posicionamiento
         setLocationRelativeTo(null);
-        ImageIcon iconoFondo = new ImageIcon(getClass().getResource("/imagenes/marvelini.jpg"));
-        Image imagenEscalada = iconoFondo.getImage().getScaledInstance(400, 300, Image.SCALE_SMOOTH);
+        ImageIcon iconoFondo = new ImageIcon(getClass().getResource("/imagenes/marvelini3.jpeg"));
+        Image imagenEscalada = iconoFondo.getImage().getScaledInstance(800, 600, Image.SCALE_SMOOTH);
         JLabel lblFondo = new JLabel(new ImageIcon(imagenEscalada));
         lblFondo.setLayout(null); // Fundamental para poder poner los botones encima
         setContentPane(lblFondo);
         //creacion de los botones
         btnLogin = new JButton("LOG IN");
-        btnLogin.setBounds(100, 70, 200, 40);
+        btnLogin.setBounds(275, 220, 250, 50);
         btnLogin.setBackground(new Color(255, 255, 255, 200));
         btnCrearPlayer = new JButton("CREAR PLAYER");
-        btnCrearPlayer.setBounds(100, 120, 200, 40);
+        btnCrearPlayer.setBounds(275, 290, 250, 50);
         btnCrearPlayer.setBackground(new Color(255, 255, 255, 200));
         add(btnLogin);
         add(btnCrearPlayer);

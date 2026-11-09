@@ -8,6 +8,7 @@ package proyectoparcial01;
  *
  * @author marlo
  */
+import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
         
@@ -21,24 +22,41 @@ public class LoginPlayer extends JFrame{
         setTitle("Acceso al Sistema");
         java.awt.Image iconoVentana = new ImageIcon(getClass().getResource("/imagenes/strategoicon.jpg")).getImage();
         setIconImage(iconoVentana);
-        setSize(320,250);
+        
+        setSize(850,420);
         setLayout(null);
         setLocationRelativeTo(null);
+        setResizable(false);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        ImageIcon iconoFondo = new ImageIcon(getClass().getResource("/imagenes/marvelcarga.jpg"));
+        Image imagenEscalada = iconoFondo.getImage().getScaledInstance(850, 470, Image.SCALE_SMOOTH);
+        JLabel lblFondo = new JLabel(new ImageIcon(imagenEscalada));
+        lblFondo.setLayout(null); // Esto nos permite usar coordenadas (setBounds) encima de la imagen
+        setContentPane(lblFondo);
         JLabel lblUsuario = new JLabel("Username:");
-        lblUsuario.setBounds(40,30,100,25);
+        lblUsuario.setFont(new Font("Comic Sans", Font.BOLD, 14));
+        lblUsuario.setForeground(Color.WHITE);
+        lblUsuario.setBounds(30,100,100,25);
         add(lblUsuario);
         txtUsername = new JTextField();
-        txtUsername.setBounds(120, 30, 140, 25);
+        txtUsername.setBounds(110, 100, 160, 25);
         add(txtUsername);
         JLabel lblPass = new JLabel("Password:");
-        lblPass.setBounds(40, 80, 100, 25);
+        lblPass.setFont(new Font("Comic Sans", Font.BOLD, 14));
+        lblPass.setForeground(Color.WHITE);
+        lblPass.setBounds(30, 160, 100, 25);
         add(lblPass);
         txtPassword = new JPasswordField();
-        txtPassword.setBounds(120, 80, 140, 25);
+        txtPassword.setBounds(110, 160, 160, 25);
         add(txtPassword);
         btnEntrar = new JButton("Ingresar");
-        btnEntrar.setBounds(90, 140, 120, 35);
+        btnEntrar.setFont(new Font("Comic Sans", Font.BOLD, 14));
+        btnEntrar.setBounds(90, 230, 120, 35);
+        btnEntrar.setBackground(new Color(226, 54, 54));
+        btnEntrar.setForeground(Color.WHITE);
+        btnEntrar.setFocusPainted(false); 
+        btnEntrar.setBorderPainted(false); 
+        btnEntrar.setOpaque(true);
         add(btnEntrar);
         btnEntrar.addActionListener(new ActionListener() {
             @Override

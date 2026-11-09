@@ -31,8 +31,6 @@ public class menuPrincipal extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //esto para cargar imagen de fondo
         ImageIcon iconoFondo = new ImageIcon(getClass().getResource("/imagenes/marvelmenu.jpg"));
-
-        // Si necesitas ajustarle el tamaño a 800x600, se mantiene igual:
         Image imagenEscalada = iconoFondo.getImage().getScaledInstance(800, 600, Image.SCALE_SMOOTH);
         iconoFondo = new ImageIcon(imagenEscalada);
         JLabel lblFondo = new JLabel(iconoFondo);
@@ -43,13 +41,13 @@ public class menuPrincipal extends JFrame {
         lblBienvenida.setForeground(java.awt.Color.WHITE); 
         add(lblBienvenida); 
         JMenuBar barramenu = new JMenuBar();
-        JMenu menuStratego = new JMenu("STRATEGO - Partida Nueva");
+        JMenu menuStratego = new JMenu("STRATEGO - MARVEL HEROES!");
         JMenu menuPerfil = new JMenu("MI PERFIL");
         JMenu menuUniverso = new JMenu("UNIVERSO MARVEL");
         JMenu menuCerrar = new JMenu("CERRAR SESIÓN");
         JMenuItem itemPartidanueva = new JMenuItem("Partida nueva");
         menuStratego.add(itemPartidanueva);
-        
+        itemPartidanueva.setEnabled(manejador.getRanking().size() > 1);
         //las opciones de "mi perfil"
         JMenuItem itemLog = new JMenuItem("Log de mis ultimos juegos");
         JMenuItem itemCambiarpass = new JMenuItem("Cambiar mi password");
@@ -157,8 +155,9 @@ public class menuPrincipal extends JFrame {
                         JOptionPane.showMessageDialog(null, "Cuenta eliminada, cerrando sesion...");
                         dispose(); // cierra el menu
                         new MenuInicial().setVisible(true); // Regresa al inicio
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Contraseña incorrecta");
+                    } 
+                    else {
+                        JOptionPane.showMessageDialog(null, "Contrasena incorrecta");
                     }
                 }
             }
@@ -197,7 +196,10 @@ public class menuPrincipal extends JFrame {
                 area.setEditable(false);
                 JScrollPane scroll = new JScrollPane(area);
                 scroll.setPreferredSize(new Dimension(300, 250));
-                JOptionPane.showMessageDialog(null, scroll, "Ranking de Jugadores", JOptionPane.INFORMATION_MESSAGE);
+                ImageIcon iconoOriginal = new ImageIcon(getClass().getResource("/imagenes/iconoran.png"));
+                Image imagenEscalada = iconoOriginal.getImage().getScaledInstance(64, 64, Image.SCALE_SMOOTH);
+                ImageIcon iconoRanking = new ImageIcon(imagenEscalada);
+                JOptionPane.showMessageDialog(null, scroll, "Ranking de Jugadores",JOptionPane.PLAIN_MESSAGE,iconoRanking);
             }
         });
         //accion para ver estadisticas de batallas
@@ -231,8 +233,10 @@ public class menuPrincipal extends JFrame {
                 else{
                     reporte += "El universo se encuentra en perfecto equilibrio neutral";
                 }
-                
-                JOptionPane.showMessageDialog(null, reporte, "Estadisticas Globales de Batalla", JOptionPane.INFORMATION_MESSAGE);
+                ImageIcon iconoOriginal = new ImageIcon(getClass().getResource("/imagenes/iconobata.png"));
+                Image imagenEscalada = iconoOriginal.getImage().getScaledInstance(64, 64, Image.SCALE_SMOOTH);
+                ImageIcon iconoBatallas = new ImageIcon(imagenEscalada);
+                JOptionPane.showMessageDialog(null, reporte, "Estadísticas Globales de Batalla", JOptionPane.PLAIN_MESSAGE,iconoBatallas);
             }
         });
         // esto es para cerrar sesion
@@ -243,7 +247,6 @@ public class menuPrincipal extends JFrame {
                 if (confirmacion == JOptionPane.YES_OPTION) {
                     dispose(); // cierra el menu principal
                     
-                    //retorna al menu inicial
                     MenuInicial menuIni = new MenuInicial();
                     menuIni.setVisible(true);
                 }
@@ -256,20 +259,18 @@ public class menuPrincipal extends JFrame {
         if (index >= ranking.size()) {
             return "";
         }
-        // Paso recursivo: tomamos el jugador actual y llamamos a la función para el siguiente
+        
         Jugador j = ranking.get(index);
-        String linea = (index + 1) + ". Agente: " + j.getUsername() + " | Puntos: " + j.getPuntos() + "\n";
+        String linea = (index + 1) + " \u2014 " + j.getUsername() + " \u2014 " + j.getPuntos() + "\n";
         
         return linea + construirRankingRecursivo(ranking, index + 1);
     }
 
     // la recursiva 3 construye el texto del Historial de partidas 
     private String construirLogRecursivo(ArrayList<String> logs, int index) {
-        // Caso base: si ya no hay logs, retornamos ""
         if (index >= logs.size()) {
             return "";
         }
-        //tomamos el log actual y llamamos a la función para el siguiente
         return logs.get(index) + "\n" + construirLogRecursivo(logs, index + 1);
     }
 }

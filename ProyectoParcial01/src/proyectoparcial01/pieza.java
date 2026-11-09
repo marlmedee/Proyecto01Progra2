@@ -9,8 +9,8 @@ package proyectoparcial01;
  * @author marlo
  */
 import java.io.Serializable;
-public abstract class pieza implements Serializable{
-    public enum Bando{
+public abstract class pieza implements Serializable,atacable,movible{
+    public enum Bando {
         HEROES, VILLANOS
     }
     protected int rango;
@@ -27,8 +27,21 @@ public abstract class pieza implements Serializable{
     public int getRango(){
         return rango;
     }
-    public Bando getBando(){
+    public Bando getBando(){ 
         return bando;
     }
-    public abstract void revelarIdentidad();
+    public String getNombre(){ 
+       return nombre;
+    }
+    public boolean isOculta(){
+        return oculta;
+    }
+    public void revelarIdentidad(){
+        this.oculta = false;
+    }
+    public abstract boolean esMovil();
+    @Override
+    public abstract atacable.resulCombate defender(pieza atacante);
+    @Override
+    public abstract boolean validarMovimiento(int filaOrigen, int colOrigen, int filaDestino, int colDestino);
 }

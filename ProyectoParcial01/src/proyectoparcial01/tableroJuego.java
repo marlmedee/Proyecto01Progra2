@@ -14,7 +14,7 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Collections;
 public class tableroJuego extends JFrame{
-    private piezaNormal[][] matrizLogica; 
+    private pieza[][] matrizLogica; 
     private int filaOrigen = -1;
     private int colOrigen = -1;
     private JButton casillas[][];
@@ -81,7 +81,6 @@ public class tableroJuego extends JFrame{
         add(cementerioHeroes,BorderLayout.WEST);
         add(cementerioVillanos,BorderLayout.EAST);
         add(contenedor,BorderLayout.CENTER); //el tablero queda protegido
-
         tablero.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -93,7 +92,7 @@ public class tableroJuego extends JFrame{
             }
         });
         casillas = new JButton[10][10];
-        matrizLogica = new piezaNormal[10][10];
+        matrizLogica = new pieza[10][10];
         for(int fila = 0;fila<10;fila++){
             for(int col=0;col<10;col++){
                 casillas[fila][col] = new JButton();
@@ -122,7 +121,7 @@ public class tableroJuego extends JFrame{
                                     }
                                     // regla la tierra 0 y las bombas 1 no se mueven
                                     try {
-                                        if (matrizLogica[f][c].getRango() == 0 || matrizLogica[f][c].getRango() == 11) {
+                                        if (matrizLogica[f][c].esMovil()) {
                                             throw new MovimientoInvalidoException("Las bombas y la TIERRA son piezas estáticas y no se pueden mover.");
                                         }
                                         else {
@@ -146,39 +145,21 @@ public class tableroJuego extends JFrame{
                                 }
                                 //si es una casilla vacia o del enemigo intentamos mover
                                 else{
-                                    
-                                    int difFila=Math.abs(filaOrigen-f);
-                                    int difCol=Math.abs(colOrigen-c);
-                                    
+                                    int difFila = Math.abs(filaOrigen - f);
+                                    int difCol = Math.abs(colOrigen - c);
                                     boolean movimientoValido = false;
-                                    
-                                    //validacion de movimiento normal de 1 casilla
-                                    if((difFila + difCol) == 1 && casillas[f][c].isEnabled()){
-                                        movimientoValido = true;
-                                    }
-                                    // validacion de movimiento largo exclusivo del explorador de rango 2
-                                    else if(matrizLogica[filaOrigen][colOrigen].getRango() == 2 && casillas[f][c].isEnabled()){
-                                        if (filaOrigen==f|| colOrigen== c) { 
+                                    pieza movil = matrizLogica[filaOrigen][colOrigen];
+                                    //cada pieza decide si el movimiento es valido para ella (es como polimorfismo)
+                                    if (casillas[f][c].isEnabled() && movil.validarMovimiento(filaOrigen, colOrigen, f, c)) {
+                                        if (difFila + difCol == 1) {
                                             movimientoValido = true;
-                                            if (filaOrigen == f) { 
-                                                int paso = (c > colOrigen) ? 1 : -1;
-                                                for (int i = colOrigen + paso; i != c; i += paso) {
-                                                    if (matrizLogica[f][i] != null || !casillas[f][i].isEnabled()) {
-                                                        movimientoValido = false; break;
-                                                    }
-                                                }
-                                            } 
-                                            else { 
-                                                int paso=(f>filaOrigen) ? 1 : -1;
-                                                for (int i = filaOrigen + paso; i != f; i += paso) {
-                                                    if (matrizLogica[i][c] != null || !casillas[i][c].isEnabled()) {
-                                                        movimientoValido = false; break;
-                                                    }
-                                                }
-                                            }
+                                        }
+                                        else {
+                                            int pasoF = Integer.signum(f - filaOrigen);
+                                            int pasoC = Integer.signum(c - colOrigen);
+                                            movimientoValido = caminoLibreRecursivo(filaOrigen + pasoF, colOrigen + pasoC, f, c, pasoF, pasoC);
                                         }
                                     }
-                                    
                                     if(movimientoValido){
                                         
                                         if(matrizLogica[f][c]==null){
@@ -186,28 +167,30 @@ public class tableroJuego extends JFrame{
                                             matrizLogica[f][c] = matrizLogica[filaOrigen][colOrigen];
                                         }
                                         else{
-                                            piezaNormal atacante = matrizLogica[filaOrigen][colOrigen];
-                                            piezaNormal defensor = matrizLogica[f][c];
+                                            pieza atacante = matrizLogica[filaOrigen][colOrigen];
+                                            pieza defensor = matrizLogica[f][c];
                                             atacable.resulCombate resultado = defensor.defender(atacante);
                                             if(resultado==atacable.resulCombate.GANA_ATACANTE){
                                                 if (defensor.getRango() == 0) {
-                                                    bitacoraEventos.add(atacante.getNombre()+" ("+turnoActual+") CAPTURO LA TIERRA Y GANO LA PARTIDA!");
-                                                    //esto es de la suma puntos y los log
-                                                    jugadorActivo.sumarPuntos(3);
-                                                    if (turnoActual==pieza.Bando.HEROES) {
-                                                        jugadorActivo.sumarpartiHero();
+                                                   Jugador ganador = (turnoActual == bandoJugador1) ? jugadorActivo : jugador2;
+                                                    Jugador perdedor = (ganador == jugadorActivo) ? jugador2 : jugadorActivo;
+
+                                                    bitacoraEventos.add(atacante.getNombre() + " (" + turnoActual + ") CAPTURO LA TIERRA Y GANO LA PARTIDA!");
+                                                    ganador.sumarPuntos(3);
+                                                    if (turnoActual == pieza.Bando.HEROES) {
+                                                        ganador.sumarpartiHero();
                                                     }
-                                                    else {
-                                                        jugadorActivo.sumarpartiVilla();
+                                                    else{
+                                                        ganador.sumarpartiVilla();
                                                     }
-                                                    jugadorActivo.agregarLog("VICTORIA: Capturaste la Tierra con el bando " + turnoActual + " (+3 puntos)");
-                                                
-                                                    //guardamos los cambios inmediatamente en el archivo
+                                                    ganador.agregarLog("VICTORIA: Capturaste la Tierra de " + perdedor.getUsername() + " con el bando " + turnoActual + " (+3 puntos)");
+                                                    perdedor.agregarLog("DERROTA: " + ganador.getUsername() + " capturo tu Tierra con el bando " + turnoActual);
                                                     manejador.guardarUsuarios();
                                                     JOptionPane.showMessageDialog(null, "HAS CAPTURADO LA TIERRA!\n¡LOS " + turnoActual + " HAN GANADO LA PARTIDA!");
-                                                    dispose(); 
-                                                    return; 
-                                                } else {
+                                                    dispose();
+                                                    return;
+                                                }
+                                                else{
                                                     bitacoraEventos.add(turnoActual + " ataco con " + atacante.getNombre() + " a " + defensor.getNombre() + " -> ¡GANO " + turnoActual + "!");
                                                     JOptionPane.showMessageDialog(null,"Ganaste el combate!");
                                                 }
@@ -232,17 +215,16 @@ public class tableroJuego extends JFrame{
                                         //sin importar quien gane el que ataca abandona su casilla original
                                         casillas[filaOrigen][colOrigen].setIcon(null);
                                         matrizLogica[filaOrigen][colOrigen] = null;
-                                        
-                                    } 
+                                        turnoActual = (turnoActual == pieza.Bando.HEROES) ? pieza.Bando.VILLANOS : pieza.Bando.HEROES;
+                                        JOptionPane.showMessageDialog(null, "Cambio de bando, ahora juegan: " + turnoActual);
+                                        refrescarTodo();
+                                        if (!tieneMovimientosValidos(turnoActual)) {
+                                            declararGanadorPorBloqueo();
+                                            return;
+                                        }
+                                    }
                                     else{
                                         JOptionPane.showMessageDialog(null, "Movimiento invalido Solo 1 casilla arriba, abajo, izquierda o derecha.");
-                                    }
-                                    turnoActual=(turnoActual==pieza.Bando.HEROES)?pieza.Bando.VILLANOS:pieza.Bando.HEROES;
-                                    JOptionPane.showMessageDialog(null, "Cambio de bando, ahora juegan: "+turnoActual);
-                                    refrescarTodo();
-                                    if (!tieneMovimientosValidos(turnoActual)) {
-                                        declararGanadorPorBloqueo();
-                                        return; // Corta la ejecución para que no limpie la selección
                                     }
                                     // limpiamos todo para el siguiente turno
                                     casillas[filaOrigen][colOrigen].setBackground(Color.LIGHT_GRAY);
@@ -255,10 +237,10 @@ public class tableroJuego extends JFrame{
                 }
                 tablero.add(casillas[fila][col]);
         }   }
-        ArrayList<piezaNormal>listaHeroes=generarFichasal(pieza.Bando.HEROES);
-        ArrayList<piezaNormal>listaVillanos=generarFichasal(pieza.Bando.VILLANOS);
-        colocarFichasrecu(listaHeroes, 0, 0, 0); 
-        colocarFichasrecu(listaVillanos, 0, 6, 0);
+        ArrayList<pieza>listaHeroes=generarFichasal(pieza.Bando.HEROES);
+        ArrayList<pieza>listaVillanos=generarFichasal(pieza.Bando.VILLANOS);
+        colocarFichasrecu(listaHeroes, 0, 6, 0);
+        colocarFichasrecu(listaVillanos, 0, 0, 0);
         pack();
         setLocationRelativeTo(null);
         refrescarTodo();
@@ -315,20 +297,16 @@ public class tableroJuego extends JFrame{
                     // Determinar quien se rinde (el del turno actual) y quien gana
                     Jugador elQueSeRinde;
                     Jugador elGanador;
-                    String bandoRinde;
-                    String bandoGana;
                     if(turnoActual == bandoJugador1){
                         elQueSeRinde = jugadorActivo;
                         elGanador = jugador2;
-                        bandoRinde = "HEROES";
-                        bandoGana = "VILLANOS";
                     }
                     else{
                         elQueSeRinde = jugador2;
                         elGanador = jugadorActivo;
-                        bandoRinde = "VILLANOS";
-                        bandoGana = "HÉROES";
                     }
+                    String bandoRinde = (turnoActual == pieza.Bando.HEROES) ? "HEROES" : "VILLANOS";
+                    String bandoGana  = (turnoActual == pieza.Bando.HEROES) ? "VILLANOS" : "HEROES";
                     // darle los 3 puntos al rival si se sale el jugador 
                     elGanador.sumarPuntos(3);
                     if (bandoGana.equals("HEROES")) {
@@ -355,26 +333,26 @@ public class tableroJuego extends JFrame{
         barraMenu.add(menuOpciones);
         setJMenuBar(barraMenu);
     }
-    private ArrayList<piezaNormal> generarFichasal(pieza.Bando bando){
+    private ArrayList<pieza> generarFichasal(pieza.Bando bando){
         String p = (bando == pieza.Bando.HEROES) ? "h" : "v";
-        piezaNormal[][] gridTemporal = new piezaNormal[4][10];
+        pieza[][] gridTemporal = new pieza[4][10];
         java.util.Random rnd = new java.util.Random();
         // Mapeo de las 4 filas de como se forman que va dependiendo del bando
-        int filaFondo = (bando == pieza.Bando.HEROES) ? 3 : 0; // Fila 9 para H, Fila 0 para V
-        int filaMediaAtras = (bando == pieza.Bando.HEROES) ? 2 : 1; // Fila 8 para H, Fila 1 para V
-        int filaMediaAdelante = (bando == pieza.Bando.HEROES) ? 1 : 2; // Fila 7 para H, Fila 2 para V
-        int filaFrente = (bando == pieza.Bando.HEROES) ? 0 : 3; // Fila 6 para H, Fila 3 para V
+        int filaFondo = (bando == pieza.Bando.HEROES) ? 3 : 0;
+        int filaMediaAtras = (bando == pieza.Bando.HEROES) ? 2 : 1; 
+        int filaMediaAdelante = (bando == pieza.Bando.HEROES) ? 1 : 2; 
+        int filaFrente = (bando == pieza.Bando.HEROES) ? 0 : 3; 
         //aqui separamos las piezas por categorias diferentes
-        piezaNormal tierra = new piezaNormal(0, bando, p + "0_1");
-        ArrayList<piezaNormal> bombas = new ArrayList<>();
+        pieza tierra = new Tierra(bando, p + "0_1");
+        ArrayList<pieza> bombas = new ArrayList<>();
         for (int i = 1; i <= 6; i++){
-            bombas.add(new piezaNormal(11, bando, p + "11_" + i));
+            bombas.add(new Bomba(bando, p + "11_" + i));
         }
-        ArrayList<piezaNormal> exploradores = new ArrayList<>(); // Rango 2
+        ArrayList<pieza> exploradores = new ArrayList<>(); // Rango 2
         for (int i = 1; i <= 8; i++){
-            exploradores.add(new piezaNormal(2, bando, p + "2_" + i));
+            exploradores.add(new Explorador(bando, p + "2_" + i));
         }
-        ArrayList<piezaNormal> resto = new ArrayList<>();
+        ArrayList<pieza> resto = new ArrayList<>();
         resto.add(new piezaNormal(10,bando,p+"10_1"));
         resto.add(new piezaNormal(9,bando,p+"9_1"));
         for (int i = 1; i <= 2; i++){
@@ -433,7 +411,7 @@ public class tableroJuego extends JFrame{
             gridTemporal[pto.x][pto.y] = resto.get(i);
         }
         //convertir el bloque 4x10 a una lista lineal ordenada para la funcion recursiva
-        ArrayList<piezaNormal> listaFinal = new ArrayList<>();
+        ArrayList<pieza> listaFinal = new ArrayList<>();
         for (int f = 0; f < 4; f++) {
             for (int c = 0; c < 10; c++) {
                 listaFinal.add(gridTemporal[f][c]);
@@ -471,7 +449,7 @@ public class tableroJuego extends JFrame{
         return null;
     }
     //una de las funciones recursivas que son solicitadas
-    private void colocarFichasrecu(ArrayList<piezaNormal>fichas,int indice,int fila,int col){
+    private void colocarFichasrecu(ArrayList<pieza> fichas, int indice, int fila, int col){
         if(indice>=fichas.size()){
             return;
         }
@@ -479,7 +457,7 @@ public class tableroJuego extends JFrame{
             colocarFichasrecu(fichas,indice,fila+1,0);
             return;
         }
-        piezaNormal piezaActual=fichas.get(indice);
+        pieza piezaActual=fichas.get(indice);
         matrizLogica[fila][col]=piezaActual;
         casillas[fila][col].setText("");
         casillas[fila][col].setIcon(obtenerImagenFicha(piezaActual.getNombre()));
@@ -504,7 +482,7 @@ public class tableroJuego extends JFrame{
             }
         }
     }
-    private void registrarBaja(piezaNormal piezaEliminada){
+    private void registrarBaja(pieza piezaEliminada){
         String ruta = "/imagenes/"+piezaEliminada.getNombre()+".png";
         java.net.URL url=getClass().getResource(ruta);
         
@@ -548,7 +526,7 @@ public class tableroJuego extends JFrame{
             java.io.FileInputStream archivoEntrada = new java.io.FileInputStream("partida_marvel.stratego");
             java.io.ObjectInputStream lectorObjetos = new java.io.ObjectInputStream(archivoEntrada);
             //recuperamos los objetos exactos
-            matrizLogica = (piezaNormal[][]) lectorObjetos.readObject();
+            matrizLogica = (pieza[][]) lectorObjetos.readObject();
             turnoActual = (pieza.Bando) lectorObjetos.readObject();
             bitacoraEventos = (ArrayList<String>) lectorObjetos.readObject();
             lectorObjetos.close();
@@ -564,12 +542,12 @@ public class tableroJuego extends JFrame{
     private boolean tieneMovimientosValidos(pieza.Bando bando) {
         for (int f = 0; f < 10; f++) {
             for (int c = 0; c < 10; c++) {
-                piezaNormal p = matrizLogica[f][c];
+                pieza p = matrizLogica[f][c];
                 
                 // Si encontramos una pieza del bando actual
                 if (p != null && p.getBando() == bando) {
-                    // Si es Tierra (0) o Bomba (11), no evaluamos porque no se mueven
-                    if (p.getRango() == 0 || p.getRango() == 11) {
+
+                    if (!p.esMovil()) {
                         continue;
                     }
                     
@@ -578,14 +556,11 @@ public class tableroJuego extends JFrame{
                     for (int[] dir : direcciones) {
                         int nuevaFila = f + dir[0];
                         int nuevaCol = c + dir[1];
-                        
-                        // Si esta dentro de los límites del tablero
                         if (nuevaFila >= 0 && nuevaFila < 10 && nuevaCol >= 0 && nuevaCol < 10) {
-                            // Si no es la zona prohibida de en medio
                             if (casillas[nuevaFila][nuevaCol].isEnabled()) {
-                                // Si la casilla esta vacía o tiene un enemigo, ES un movimiento válido
+                             
                                 if (matrizLogica[nuevaFila][nuevaCol] == null || matrizLogica[nuevaFila][nuevaCol].getBando() != bando) {
-                                    return true; // Encontramos al menos 1 movimiento, así que aún puede jugar
+                                    return true; 
                                 }
                             }
                         }
@@ -600,37 +575,41 @@ public class tableroJuego extends JFrame{
     private void declararGanadorPorBloqueo() {
         Jugador perdedor;
         Jugador ganador;
-        String bandoPerdedor;
-        String bandoGanador;
-
         if (turnoActual == bandoJugador1) {
             perdedor = jugadorActivo;
             ganador = jugador2;
-            bandoPerdedor = (bandoJugador1 == pieza.Bando.HEROES) ? "HÉROES" : "VILLANOS";
-            bandoGanador = (bandoPerdedor.equals("HÉROES")) ? "VILLANOS" : "HÉROES";
-        } else {
-            perdedor = jugador2;
-            ganador = jugadorActivo;
-            bandoPerdedor = (bandoJugador2 == pieza.Bando.HEROES) ? "HÉROES" : "VILLANOS";
-            bandoGanador = (bandoPerdedor.equals("HÉROES")) ? "VILLANOS" : "HÉROES";
         }
+        else {
+        perdedor = jugador2;
+        ganador = jugadorActivo;
+        }
+        String bandoPerdedor = (turnoActual == pieza.Bando.HEROES) ? "HEROES" : "VILLANOS";
+        String bandoGanador  = (turnoActual == pieza.Bando.HEROES) ? "VILLANOS" : "HEROES";
 
-        // Sumar puntos y estadísticas al ganador
         ganador.sumarPuntos(3);
         if (bandoGanador.equals("HEROES")) {
             ganador.sumarpartiHero();
-        } else {
+        }
+        else {
             ganador.sumarpartiVilla();
         }
-        String log = perdedor.getUsername() + " usando " + bandoPerdedor + 
-                     " ha perdido por no tener movimientos validos disponibles ante " + 
-                     ganador.getUsername() + " (FECHA: " + java.time.LocalDate.now() + ")";
-        
-        jugadorActivo.agregarLog(log);
-        jugador2.agregarLog(log);
-        manejador.guardarUsuarios();
-        JOptionPane.showMessageDialog(null,perdedor.getUsername() + " se ha quedado sin piezas moviles o esta completamente bloqueado!\n\n" 
-                                            + ganador.getUsername() + " GANA LA PARTIDA por regla tecnica y obtiene +3 puntos!");
-        dispose(); 
+        String log = perdedor.getUsername() + " usando " + bandoPerdedor +
+                 " ha perdido por no tener movimientos validos disponibles ante " +
+                 ganador.getUsername() + " (FECHA: " + java.time.LocalDate.now() + ")";
+    jugadorActivo.agregarLog(log);
+    jugador2.agregarLog(log);
+    manejador.guardarUsuarios();
+    JOptionPane.showMessageDialog(null, perdedor.getUsername() + " se ha quedado sin piezas moviles o esta completamente bloqueado!\n\n"
+                                        + ganador.getUsername() + " GANA LA PARTIDA por regla tecnica y obtiene +3 puntos!");
+    dispose();
     }
+    private boolean caminoLibreRecursivo(int fila, int col, int filaDestino, int colDestino, int pasoF, int pasoC) {
+    if (fila == filaDestino && col == colDestino) {
+        return true;
+    }
+    if (matrizLogica[fila][col] != null || !casillas[fila][col].isEnabled()) {
+        return false;
+    }
+    return caminoLibreRecursivo(fila + pasoF, col + pasoC, filaDestino, colDestino, pasoF, pasoC);
+}
 }

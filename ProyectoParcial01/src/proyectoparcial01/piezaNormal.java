@@ -8,49 +8,40 @@ package proyectoparcial01;
  *
  * @author marlo
  */
-import java.io.Serializable;
-public class piezaNormal extends pieza implements movible, atacable, Serializable {
-    public piezaNormal(int rango,pieza.Bando bando, String nombre){
-        super(rango,bando,nombre);
+public class piezaNormal extends pieza{
+    public piezaNormal(int rango, pieza.Bando bando, String nombre) {
+        super(rango, bando, nombre);
     }
     @Override
-    public void revelarIdentidad() {
-        this.oculta = false;
+    public boolean esMovil() {
+        return true;
     }
-
+    // las piezas normales se mueven 1 casilla, el explorador lo sobrescribe
+    protected boolean mueveEnLinea() {
+        return false;
+    }
     @Override
     public boolean validarMovimiento(int filaOrigen, int colOrigen, int filaDestino, int colDestino) {
-   
-        return true; 
+        int difF = Math.abs(filaOrigen - filaDestino);
+        int difC = Math.abs(colOrigen - colDestino);
+        if (difF + difC == 1) {
+            return true;
+        }
+        return mueveEnLinea() && (difF + difC > 0) && (filaOrigen == filaDestino || colOrigen == colDestino);
     }
-
     @Override
-    public atacable.resulCombate defender(pieza atacante){
-      //esta es la regla del minero (el de 3) que es el unico que sobrevive a las bombas
-        if(atacante.getRango() == 3 && this.getRango() == 11){
+    public atacable.resulCombate defender(pieza atacante) {
+        // regla del espia el 1 atacando al mariscal (10) gana
+        if (atacante.getRango() ==1&&this.getRango() == 10) {
             return atacable.resulCombate.GANA_ATACANTE;
         }
-        // esta es la regla del espia, if el espia que es el 1 ataca primero asesina al Mariscal (10)
-        if(atacante.getRango()==1&&this.getRango()==10){
-            return atacable.resulCombate.GANA_ATACANTE;
-        }
-        //esta es las reglas de las bombas(las 11) Destruye a cualquier otra pieza que intente tocarla
-        if(this.getRango()==11){
-            return atacable.resulCombate.GANA_DEFENSOR;
-        }
-        // y esto es la logica del combate normal que el numero mayor gana
-        if(atacante.getRango()>this.getRango()){
+        // combate normal gana el rango mayor
+        if (atacante.getRango() > this.getRango()) {
             return atacable.resulCombate.GANA_ATACANTE;
         } 
-        else if(atacante.getRango() < this.getRango()){
+        else if (atacante.getRango() < this.getRango()){
             return atacable.resulCombate.GANA_DEFENSOR;
         }
-        else{
-            return atacable.resulCombate.EMPATE;
-        }
-    }
-
-    public String getNombre() {
-       return this.nombre;
+        return atacable.resulCombate.EMPATE;
     }
 }
