@@ -121,7 +121,7 @@ public class tableroJuego extends JFrame{
                                     }
                                     // regla la tierra 0 y las bombas 1 no se mueven
                                     try {
-                                        if (matrizLogica[f][c].esMovil()) {
+                                        if (!matrizLogica[f][c].esMovil()) {
                                             throw new MovimientoInvalidoException("Las bombas y la TIERRA son piezas estáticas y no se pueden mover.");
                                         }
                                         else {
